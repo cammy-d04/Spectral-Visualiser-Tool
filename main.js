@@ -108,6 +108,42 @@ tracks = [
     decayLabelId: 'decayValB',
     brightSliderId: 'brightSliderB',
     brightLabelId: 'brightValB'
+  }),
+  new Track({
+    id: 'C',
+    color: 'seagreen',
+    engineSelectId: 'engineC',
+    freqSliderId: 'freqSliderC',
+    freqInputId: 'freqInputC',
+    freqLabelId: 'freqValC',
+    showCheckboxId: 'showC'
+  }),
+  new Track({
+    id: 'D',
+    color: 'orange',
+    engineSelectId: 'engineD',
+    freqSliderId: 'freqSliderD',
+    freqInputId: 'freqInputD',
+    freqLabelId: 'freqValD',
+    showCheckboxId: 'showD'
+  }),
+  new Track({
+    id: 'E',
+    color: 'purple',
+    engineSelectId: 'engineE',
+    freqSliderId: 'freqSliderE',
+    freqInputId: 'freqInputE',
+    freqLabelId: 'freqValE',
+    showCheckboxId: 'showE'
+  }),
+  new Track({
+    id: 'F',
+    color: 'goldenrod',
+    engineSelectId: 'engineF',
+    freqSliderId: 'freqSliderF',
+    freqInputId: 'freqInputF',
+    freqLabelId: 'freqValF',
+    showCheckboxId: 'showF'
   })
 ];
 

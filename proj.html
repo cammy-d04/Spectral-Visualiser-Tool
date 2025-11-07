@@ -78,6 +78,10 @@
   }
   .dot.a { background: red; opacity: 0.5; }
   .dot.b { background: deepskyblue; opacity: 0.5; }
+  .dot.c { background: seagreen; opacity: 0.5; }
+  .dot.d { background: orange; opacity: 0.5; }
+  .dot.e { background: purple; opacity: 0.5; }
+  .dot.f { background: rgb(218, 32, 196); opacity: 0.5; }
 
   input[type="range"] {
     width: 240px;
@@ -130,7 +134,12 @@
   <button id="start">Start/Stop</button>
   <span class="chip"><span class="dot a"></span>A (red)</span>
   <span class="chip"><span class="dot b"></span>B (blue)</span>
+  <span class="chip"><span class="dot c"></span>C (green)</span>
+  <span class="chip"><span class="dot d"></span>D (orange)</span>
+  <span class="chip"><span class="dot e"></span>E (purple)</span>
+  <span class="chip"><span class="dot f"></span>F (gold)</span>
 </div>
+
 
 <div class="row" id="visToggles">
   <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
@@ -139,7 +148,20 @@
   <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
     <input type="checkbox" id="showB" checked> Show B
   </label>
+  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showC" checked> Show C
+  </label>
+  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showD" checked> Show D
+  </label>
+  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showE" checked> Show E
+  </label>
+  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showF" checked> Show F
+  </label>
 </div>
+
 
 <div class="row">
   <!-- Column A controls -->
@@ -254,7 +276,76 @@
 
 </div>
 </div>
+<!-- Extra tracks C–F (simpler: engine + frequency only) -->
+<div class="row" id="extraTracks">
+  <div class="col">
+    <label>Engine C:
+      <select id="engineC">
+        <option value="sinOsc">Sine oscillator</option>
+        <option value="triangleOsc">Triangle oscillator</option>
+        <option value="squareOsc">Square oscillator</option>
+        <option value="add">String (additive)</option>
+      </select>
+    </label>
 
+    <label>Freq C:
+      <input id="freqSliderC" type="range" min="50" max="2000" step="1">
+      <input id="freqInputC" type="number" min="50" max="2000" step="1" style="width:70px">
+      <span id="freqValC"></span>
+    </label>
+  </div>
+
+  <div class="col">
+    <label>Engine D:
+      <select id="engineD">
+        <option value="sinOsc">Sine oscillator</option>
+        <option value="triangleOsc">Triangle oscillator</option>
+        <option value="squareOsc">Square oscillator</option>
+        <option value="add">String (additive)</option>
+      </select>
+    </label>
+
+    <label>Freq D:
+      <input id="freqSliderD" type="range" min="50" max="2000" step="1">
+      <input id="freqInputD" type="number" min="50" max="2000" step="1" style="width:70px">
+      <span id="freqValD"></span>
+    </label>
+  </div>
+
+  <div class="col">
+    <label>Engine E:
+      <select id="engineE">
+        <option value="sinOsc">Sine oscillator</option>
+        <option value="triangleOsc">Triangle oscillator</option>
+        <option value="squareOsc">Square oscillator</option>
+        <option value="add">String (additive)</option>
+      </select>
+    </label>
+
+    <label>Freq E:
+      <input id="freqSliderE" type="range" min="50" max="2000" step="1">
+      <input id="freqInputE" type="number" min="50" max="2000" step="1" style="width:70px">
+      <span id="freqValE"></span>
+    </label>
+  </div>
+
+  <div class="col">
+    <label>Engine F:
+      <select id="engineF">
+        <option value="sinOsc">Sine oscillator</option>
+        <option value="triangleOsc">Triangle oscillator</option>
+        <option value="squareOsc">Square oscillator</option>
+        <option value="add">String (additive)</option>
+      </select>
+    </label>
+
+    <label>Freq F:
+      <input id="freqSliderF" type="range" min="50" max="2000" step="1">
+      <input id="freqInputF" type="number" min="50" max="2000" step="1" style="width:70px">
+      <span id="freqValF"></span>
+    </label>
+  </div>
+</div>
 <!-- Canvas 1: frequency-domain spectra (overlaid) -->
 <canvas id="viz"></canvas>
 
