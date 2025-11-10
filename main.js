@@ -7,24 +7,17 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 // Make it visible to Track (which checks window.audioCtx)
 window.audioCtx = audioCtx;
 
-// Voice container per channel A/B
 // Multi-track container
 let tracks = [];
 
 
 // piano sample state for engineA === "pianoSample"
 let pianoBufA = null;        // decoded AudioBuffer from file
-let pianoNominalHzA = 220;   // pitch of original sample
+let pianoNominalHzA = 220;   // starting guess for pitch of As file
 let pianoPitchHzA = 220;     // current target playback pitch
-let pianoOffsetA = 0.0;      // where in the file to start (secs)
+let pianoOffsetA = 0.0;      // where in the file to start secs
 let pianoVoiceA = null;      // current live piano voice instance
 
-
-let pianoBufB = null;
-let pianoNominalHzB = 330;  // starting guess for pitch of Bs file
-let pianoPitchHzB = 330;
-let pianoOffsetB = 0.0;
-let pianoVoiceB = null;
 
 // Canvases
 const canvas = document.getElementById('viz');
@@ -32,22 +25,9 @@ const ctx = canvas.getContext('2d');
 
 
 // Controls
-const freqSliderA = document.getElementById('freqSliderA');
-const freqValA = document.getElementById('freqValA');
-const freqSliderB = document.getElementById('freqSliderB');
-const freqValB = document.getElementById('freqValB');
 const engineA = document.getElementById('engineA');
 const engineB = document.getElementById('engineB');
 
-// Controls for engine A
-const BSliderA = document.getElementById('BSliderA');
-const BValA = document.getElementById('BValA');
-const posSliderA = document.getElementById('posSliderA');
-const posValA = document.getElementById('posValA');
-const decaySliderA = document.getElementById('decaySliderA');
-const decayValA = document.getElementById('decayValA');
-const brightSliderA = document.getElementById('brightSliderA');
-const brightValA = document.getElementById('brightValA');
 
 // Piano A controls
 const pianoFileA = document.getElementById('pianoFileA');
@@ -56,20 +36,6 @@ const pianoPitchValA = document.getElementById('pianoPitchValA');
 const pianoTimeSliderA = document.getElementById('pianoTimeSliderA');
 const pianoTimeValA = document.getElementById('pianoTimeValA');
 const pianoPlayA = document.getElementById('pianoPlayA');
-
-// Controls for engine B
-const BSliderB = document.getElementById('BSliderB');
-const BValB = document.getElementById('BValB');
-const posSliderB = document.getElementById('posSliderB');
-const posValB = document.getElementById('posValB');
-const decaySliderB = document.getElementById('decaySliderB');
-const decayValB = document.getElementById('decayValB');
-const brightSliderB = document.getElementById('brightSliderB');
-const brightValB = document.getElementById('brightValB');
-
-// tick boxes for showing/hiding engine graphs
-const showAEl = document.getElementById('showA');
-const showBEl = document.getElementById('showB');
 
 
 
@@ -157,46 +123,47 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
+
 //create analyser with consistent FFT size
+// 2048 point FFT gives 11hz bins at 44100hz sample rate
 function makeAnalyser(){
   const an = audioCtx.createAnalyser();
   an.fftSize = 2048;
   return an;
 }
-
-//decode file into an AudioBuffer
-async function decodeToBuffer(fileOrUrl){
-  const arrBuf = (fileOrUrl instanceof Blob)
-    ? await fileOrUrl.arrayBuffer()
-    : await (await fetch(fileOrUrl)).arrayBuffer();
-  // Safari/WebAudio quirk: decodeAudioData wants a copy
-  return await audioCtx.decodeAudioData(arrBuf.slice(0));
+// decode a user-selected file into an AudioBuffer
+async function decodeToBuffer(file) {
+  const arrBuf = await file.arrayBuffer();         // read file bytes
+  return await audioCtx.decodeAudioData(arrBuf);   // decode into AudioBuffer
 }
 
 // =====================
 // Engines
 // =====================
+
+// make basic sine wave oscillator voice
 function makeSinOsc(f){
   const osc = audioCtx.createOscillator();
   osc.type = 'sine';
   const g = audioCtx.createGain();
-  g.gain.value = 0.12;
-  osc.frequency.value = f;
-  osc.connect(g);
+  g.gain.value = 0.12; // gain setting
+  osc.frequency.value = f; // initial freq
+  osc.connect(g); // connect osc to gain
   osc.start();
 
   return {
-    in: null,
-    out: g,
-    setFreq: (hz)=>osc.frequency.setValueAtTime(hz, audioCtx.currentTime),
-    stop: ()=>{
-      try{osc.stop();}catch(e){}
+    in: null, // no input node
+    out: g, //audio output node
+    setFreq: (hz)=>osc.frequency.setValueAtTime(hz, audioCtx.currentTime), // freq changer
+    stop: ()=>{// if stop called, stop and disconnect nodes
+      try{osc.stop();}catch(e){} // in case already stopped
       osc.disconnect();
       g.disconnect();
     }
   };
 }
 
+// triangle wave oscillator voice
 function makeTriOsc(f){
   const osc = audioCtx.createOscillator();
   osc.type = 'triangle';
@@ -218,6 +185,7 @@ function makeTriOsc(f){
   };
 }
 
+// square wave oscillator voice
 function makeSquareOsc(f){
   const osc = audioCtx.createOscillator();
   osc.type = 'square';
@@ -245,7 +213,7 @@ function makeSquareOsc(f){
 function makeAdditiveString(f0, B, p){
   const group = audioCtx.createGain();
   group.gain.value = 0.09;
-  const N = 24; // partials
+  const N = 24; // TWENTY FOUR PARTIALS
   const oscs = [];
 
   // track base frequency and current B so updates behave
@@ -271,29 +239,30 @@ function makeAdditiveString(f0, B, p){
     in: null,
     out: group,
 
-    setFreq: (hz)=>{
+    // frequency setter
+    setFreq: (hz)=>{ // update all frequencies based on new f0
       baseF0 = hz;
       for(const {o,n} of oscs){
         const fn = freqFor(n);
         o.frequency.setValueAtTime(fn, audioCtx.currentTime);
       }
     },
-
+    // inharmonicity B setter
     setB: (B2)=>{
       curB = B2;
-      for(const {o,n} of oscs){
+      for(const {o,n} of oscs){ // update all frequencies based on new B
         const fn = freqFor(n);
         o.frequency.setValueAtTime(fn, audioCtx.currentTime);
       }
     },
-
-    setPluckPos: (p2)=>{
+    // pluck position setter
+    setPluckPos: (p2)=>{ // update all gains based on new p
       for(const {g,n} of oscs){
         const amp = Math.abs(Math.sin(Math.PI * n * p2)) / n;
         g.gain.setValueAtTime(amp, audioCtx.currentTime);
       }
     },
-
+    // stop everything
     stop: ()=>{
       oscs.forEach(({o,g})=>{
         try{o.stop();}catch(e){}
@@ -308,17 +277,20 @@ function makeAdditiveString(f0, B, p){
 
 
 // Piano sample voice for engineA === 'pianoSample'
-function makePianoSampleVoice(audioBuffer, {
-  startSec = 0,
-  pitchHz = 220,
-  nominalHz = 220
-} = {}) {
-
+//audiobuffer = decoded audiobuffer of sample
+//nominalpitchHz = estimate of pitch of sample
+//pitch = target pitch to play at now
+//offset = start pos (s)
+// pianovoiceA = current active voice object for A
+function makePianoSampleVoice(audioBuffer, {startSec = 0, pitchHz = 220, nominalHz = 220} ={}) {
+//create an audiobuffersourcenode, read file into it and play 
+//can change pitch via playback rate and where in file to start (start(when, offset))
+//wrap it in voice object so acts like other engines with .out, .setfreq, etc...
   const outGain = audioCtx.createGain();
   outGain.gain.value = 0.8;
 
-  let srcNode = null;
-  let currentStartSec = startSec;
+  let srcNode = null; 
+  let currentStartSec = startSec; 
   let currentPitchHz = pitchHz;
   let currentNominalHz = nominalHz;
 
@@ -411,7 +383,6 @@ function makeVoice(engine, f0, opts){
   if(engine === 'triangleOsc')  return makeTriOsc(f0);
   if(engine === 'squareOsc')    return makeSquareOsc(f0);
   if(engine === 'add')          return makeAdditiveString(f0, opts.B || 0, opts.pos || 0.2);
-  if(engine === 'ks')           return makeKS(f0, opts.decay || 2, opts.brightness || 0.5);
 }
 
 // =====================
@@ -494,9 +465,6 @@ function draw() {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, w, h);
   drawAxes(nyquist, maxAmp);
-
-  const plotW = w - MARGIN_LEFT - 10;
-  const plotH = h - MARGIN_BOTTOM - 10;
 
   // assume all analysers use same fftSize
   const refAnalyser = activeTracks[0].analyser;
