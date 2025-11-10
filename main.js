@@ -26,7 +26,6 @@ const ctx = canvas.getContext('2d');
 
 // Controls
 const engineA = document.getElementById('engineA');
-const engineB = document.getElementById('engineB');
 
 
 // Piano A controls
@@ -39,7 +38,7 @@ const pianoPlayA = document.getElementById('pianoPlayA');
 
 
 
-// Create Track instances (start with A & B using existing controls)
+// Create Track instances
 tracks = [
   new Track({
     id: 'A',
@@ -60,20 +59,12 @@ tracks = [
   }),
   new Track({
     id: 'B',
-    color: 'deepskyblue',
+    color: 'seagreen',
     engineSelectId: 'engineB',
     freqSliderId: 'freqSliderB',
     freqInputId: 'freqInputB',
     freqLabelId: 'freqValB',
-    showCheckboxId: 'showB',
-    BSliderId: 'BSliderB',
-    BLabelId: 'BValB',
-    posSliderId: 'posSliderB',
-    posLabelId: 'posValB',
-    decaySliderId: 'decaySliderB',
-    decayLabelId: 'decayValB',
-    brightSliderId: 'brightSliderB',
-    brightLabelId: 'brightValB'
+    showCheckboxId: 'showB'
   }),
   new Track({
     id: 'C',
@@ -385,6 +376,8 @@ function makeVoice(engine, f0, opts){
   if(engine === 'add')          return makeAdditiveString(f0, opts.B || 0, opts.pos || 0.2);
 }
 
+
+
 // =====================
 // start/stop graph wiring
 // =====================
@@ -454,12 +447,15 @@ function draw() {
   const activeTracks = tracks.filter(t => t.analyser);
   if (activeTracks.length === 0) return;
 
-  requestAnimationFrame(draw);
+  requestAnimationFrame(draw); // Schedule next frame
 
   const w = canvas.width;
   const h = canvas.height;
   const nyquist = 20000;
   const maxAmp = 1.0;
+
+   // height of plotting area
+  const plotH = h - MARGIN_BOTTOM - 10;
 
   // clear background
   ctx.fillStyle = '#fff';
@@ -525,7 +521,6 @@ document.getElementById('start').addEventListener('click', () => {
 // show/hide the right controls for each engine
 function toggleParamVisibility(){
   const aOnly = document.querySelectorAll('.a-only');
-  const bOnly = document.querySelectorAll('.b-only');
 
   // hide/show additive+KS params for A
   aOnly.forEach(el=>{
@@ -534,10 +529,6 @@ function toggleParamVisibility(){
     el.style.display = (engineA.value==='add' || engineA.value==='ks') ? '' : 'none';
   });
 
-  // hide/show additive+KS params for B
-  bOnly.forEach(el=>{
-    el.style.display = (engineB.value==='add' || engineB.value==='ks') ? '' : 'none';
-  });
   // pianoControlsA visible only if pianoSample
   const pianoBlockA = document.getElementById('pianoControlsA');
   if (pianoBlockA){
