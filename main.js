@@ -1,42 +1,8 @@
-// main.js
-// =====================
-// Setup
-// =====================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-// Make it visible to Track (which checks window.audioCtx)
 window.audioCtx = audioCtx;
 
 // Multi-track container
 let tracks = [];
-
-
-// piano sample state for engineA === "pianoSample"
-let pianoBufA = null;        // decoded AudioBuffer from file
-let pianoNominalHzA = 220;   // starting guess for pitch of As file
-let pianoPitchHzA = 220;     // current target playback pitch
-let pianoOffsetA = 0.0;      // where in the file to start secs
-let pianoVoiceA = null;      // current live piano voice instance
-
-
-// Canvases
-const canvas = document.getElementById('viz');
-const ctx = canvas.getContext('2d');
-
-
-// Controls
-const engineA = document.getElementById('engineA');
-
-
-// Piano A controls
-const pianoFileA = document.getElementById('pianoFileA');
-const pianoPitchSliderA = document.getElementById('pianoPitchSliderA');
-const pianoPitchValA = document.getElementById('pianoPitchValA');
-const pianoTimeSliderA = document.getElementById('pianoTimeSliderA');
-const pianoTimeValA = document.getElementById('pianoTimeValA');
-const pianoPlayA = document.getElementById('pianoPlayA');
-
-
 
 // Create Track instances
 tracks = [
@@ -47,19 +13,11 @@ tracks = [
     freqSliderId: 'freqSliderA',
     freqInputId: 'freqInputA',
     freqLabelId: 'freqValA',
-    showCheckboxId: 'showA',
-    BSliderId: 'BSliderA',
-    BLabelId: 'BValA',
-    posSliderId: 'posSliderA',
-    posLabelId: 'posValA',
-    decaySliderId: 'decaySliderA',
-    decayLabelId: 'decayValA',
-    brightSliderId: 'brightSliderA',
-    brightLabelId: 'brightValA'
+    showCheckboxId: 'showA'
   }),
   new Track({
     id: 'B',
-    color: 'seagreen',
+    color: 'green',
     engineSelectId: 'engineB',
     freqSliderId: 'freqSliderB',
     freqInputId: 'freqInputB',
@@ -104,277 +62,9 @@ tracks = [
   })
 ];
 
+setTracks(tracks); 
 
 
-// Layout / sizing
-function resize(){
-  canvas.width  = canvas.clientWidth;
-  canvas.height  = canvas.clientHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-
-//create analyser with consistent FFT size
-// 2048 point FFT gives 11hz bins at 44100hz sample rate
-function makeAnalyser(){
-  const an = audioCtx.createAnalyser();
-  an.fftSize = 2048;
-  return an;
-}
-// decode a user-selected file into an AudioBuffer
-async function decodeToBuffer(file) {
-  const arrBuf = await file.arrayBuffer();         // read file bytes
-  return await audioCtx.decodeAudioData(arrBuf);   // decode into AudioBuffer
-}
-
-// =====================
-// Engines
-// =====================
-
-// make basic sine wave oscillator voice
-function makeSinOsc(f){
-  const osc = audioCtx.createOscillator();
-  osc.type = 'sine';
-  const g = audioCtx.createGain();
-  g.gain.value = 0.12; // gain setting
-  osc.frequency.value = f; // initial freq
-  osc.connect(g); // connect osc to gain
-  osc.start();
-
-  return {
-    in: null, // no input node
-    out: g, //audio output node
-    setFreq: (hz)=>osc.frequency.setValueAtTime(hz, audioCtx.currentTime), // freq changer
-    stop: ()=>{// if stop called, stop and disconnect nodes
-      try{osc.stop();}catch(e){} // in case already stopped
-      osc.disconnect();
-      g.disconnect();
-    }
-  };
-}
-
-// triangle wave oscillator voice
-function makeTriOsc(f){
-  const osc = audioCtx.createOscillator();
-  osc.type = 'triangle';
-  const g = audioCtx.createGain();
-  g.gain.value = 0.12;
-  osc.frequency.value = f;
-  osc.connect(g);
-  osc.start();
-
-  return {
-    in: null,
-    out: g,
-    setFreq: (hz)=>osc.frequency.setValueAtTime(hz, audioCtx.currentTime),
-    stop: ()=>{
-      try{osc.stop();}catch(e){}
-      osc.disconnect();
-      g.disconnect();
-    }
-  };
-}
-
-// square wave oscillator voice
-function makeSquareOsc(f){
-  const osc = audioCtx.createOscillator();
-  osc.type = 'square';
-  const g = audioCtx.createGain();
-  g.gain.value = 0.12;
-  osc.frequency.value = f;
-  osc.connect(g);
-  osc.start();
-
-  return {
-    in: null,
-    out: g,
-    setFreq: (hz)=>osc.frequency.setValueAtTime(hz, audioCtx.currentTime),
-    stop: ()=>{
-      try{osc.stop();}catch(e){}
-      osc.disconnect();
-      g.disconnect();
-    }
-  };
-}
-
-// Additive string model with slight inharmonicity
-// f_n = n f0 * sqrt(1 + B n^2)
-// amplitude_n ~ (sin(pi n p) / n) to mimic pluck position p in (0,1)
-function makeAdditiveString(f0, B, p){
-  const group = audioCtx.createGain();
-  group.gain.value = 0.09;
-  const N = 24; // TWENTY FOUR PARTIALS
-  const oscs = [];
-
-  // track base frequency and current B so updates behave
-  let baseF0 = f0;
-  let curB   = B;
-
-  const freqFor = (n) => baseF0 * n * Math.sqrt(1 + curB * n * n);
-
-  for(let n=1; n<=N; n++){
-    const fn = freqFor(n);
-    const amp = Math.abs(Math.sin(Math.PI * n * p)) / n; // rolloff around 1/n
-    const o = audioCtx.createOscillator();
-    o.type = 'sine';
-    const g = audioCtx.createGain();
-    g.gain.value = amp;
-    o.frequency.value = fn;
-    o.connect(g).connect(group);
-    o.start();
-    oscs.push({o, g, n});
-  }
-
-  return {
-    in: null,
-    out: group,
-
-    // frequency setter
-    setFreq: (hz)=>{ // update all frequencies based on new f0
-      baseF0 = hz;
-      for(const {o,n} of oscs){
-        const fn = freqFor(n);
-        o.frequency.setValueAtTime(fn, audioCtx.currentTime);
-      }
-    },
-    // inharmonicity B setter
-    setB: (B2)=>{
-      curB = B2;
-      for(const {o,n} of oscs){ // update all frequencies based on new B
-        const fn = freqFor(n);
-        o.frequency.setValueAtTime(fn, audioCtx.currentTime);
-      }
-    },
-    // pluck position setter
-    setPluckPos: (p2)=>{ // update all gains based on new p
-      for(const {g,n} of oscs){
-        const amp = Math.abs(Math.sin(Math.PI * n * p2)) / n;
-        g.gain.setValueAtTime(amp, audioCtx.currentTime);
-      }
-    },
-    // stop everything
-    stop: ()=>{
-      oscs.forEach(({o,g})=>{
-        try{o.stop();}catch(e){}
-        o.disconnect();
-        g.disconnect();
-      });
-      group.disconnect();
-    }
-  };
-}
-
-
-
-// Piano sample voice for engineA === 'pianoSample'
-//audiobuffer = decoded audiobuffer of sample
-//nominalpitchHz = estimate of pitch of sample
-//pitch = target pitch to play at now
-//offset = start pos (s)
-// pianovoiceA = current active voice object for A
-function makePianoSampleVoice(audioBuffer, {startSec = 0, pitchHz = 220, nominalHz = 220} ={}) {
-//create an audiobuffersourcenode, read file into it and play 
-//can change pitch via playback rate and where in file to start (start(when, offset))
-//wrap it in voice object so acts like other engines with .out, .setfreq, etc...
-  const outGain = audioCtx.createGain();
-  outGain.gain.value = 0.8;
-
-  let srcNode = null; 
-  let currentStartSec = startSec; 
-  let currentPitchHz = pitchHz;
-  let currentNominalHz = nominalHz;
-
-  function playNow() {
-    stop();
-
-    const src = audioCtx.createBufferSource();
-    src.buffer = audioBuffer;
-
-    // playbackRate = desiredPitch / nominalPitch
-    const ratio = currentNominalHz > 0 ? (currentPitchHz / currentNominalHz) : 1;
-    src.playbackRate.value = ratio;
-
-    const clampedStart = Math.min(
-      Math.max(currentStartSec, 0),
-      audioBuffer.duration - 0.001
-    );
-
-    src.connect(outGain);
-    src.start(0, clampedStart);
-
-    srcNode = src;
-  }
-
-  function stop(){
-    if (srcNode){
-      try{ srcNode.stop(); }catch(e){}
-      try{ srcNode.disconnect(); }catch(e){}
-      srcNode = null;
-    }
-  }
-
-  function setFreq(hz){
-    currentPitchHz = hz;
-    if (srcNode && currentNominalHz > 0){
-      const ratio = currentPitchHz / currentNominalHz;
-      srcNode.playbackRate.setValueAtTime(ratio, audioCtx.currentTime);
-    }
-  }
-
-  function setStart(sec){
-    currentStartSec = sec;
-    // don't scrub mid play you hit retrigger to hear new slice
-  }
-
-  function retrigger(){
-    playNow();
-  }
-
-  // fire once on creation so A behaves like other engines and is audible immediately
-  playNow();
-
-  return {
-    out: outGain,
-    setFreq,
-    setStart,
-    retrigger,
-    stop
-  };
-}
-
-//builds voices for A or B depending on engine
-function makeVoice(engine, f0, opts){
-
-  // pianoSample only for A for now
-  if (engine === 'pianoSample') {
-    if (!pianoBufA){
-      const g = audioCtx.createGain();
-      g.gain.value = 0.0;
-      return {
-        out: g,
-        setFreq: ()=>{},
-        setStart: ()=>{},
-        retrigger: ()=>{},
-        stop: ()=>{ g.disconnect(); }
-      };
-    }
-
-    // create pianoSample voice using global A state
-    pianoVoiceA = makePianoSampleVoice(pianoBufA, {
-      startSec: pianoOffsetA,
-      pitchHz: pianoPitchHzA,
-      nominalHz: pianoNominalHzA
-    });
-
-    return pianoVoiceA;
-  }
-
-  if(engine === 'sinOsc')       return makeSinOsc(f0);
-  if(engine === 'triangleOsc')  return makeTriOsc(f0);
-  if(engine === 'squareOsc')    return makeSquareOsc(f0);
-  if(engine === 'add')          return makeAdditiveString(f0, opts.B || 0, opts.pos || 0.2);
-}
 
 
 
@@ -383,119 +73,13 @@ function makeVoice(engine, f0, opts){
 // =====================
 function start() {
   audioCtx.resume();
-  tracks.forEach(t => t.buildAudioGraph());
+  vizTracks.forEach(t => t.buildAudioGraph());
   draw();
 }
 
 function stop() {
-  tracks.forEach(t => t.stop());
+  vizTracks.forEach(t => t.stop());
 }
-
-
-// =====================
-// Plotting helpers
-// =====================
-const MARGIN_LEFT = 50, MARGIN_BOTTOM = 30;
-
-function drawAxes(maxFreq, maxAmp){
-  const w = canvas.width, h = canvas.height;
-  const xs = MARGIN_LEFT;
-  const ys = h - MARGIN_BOTTOM;
-
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 1;
-  ctx.fillStyle = '#333';
-  ctx.font = '11px sans-serif';
-
-  // y-axis
-  ctx.beginPath(); ctx.moveTo(xs, 0); ctx.lineTo(xs, ys); ctx.stroke();
-  // x-axis
-  ctx.beginPath(); ctx.moveTo(xs, ys); ctx.lineTo(w, ys); ctx.stroke();
-
-  // --- X-axis (frequency) ---
-  const fMin = 0;                  // start at 20hz
-  const fMax = maxFreq;  
-  const ticks = 100;                 // more subdivisions
-
-  for (let i = 0; i <= ticks; i++) {
-    const frac = i / ticks;
-    const f = fMin + frac * (fMax - fMin);
-    const x = xs + frac * (w - xs - 8);
-    ctx.beginPath(); ctx.moveTo(x, ys); ctx.lineTo(x, ys + 5); ctx.stroke();
-
-    // label roughly every 5th tick
-    if (i % 5 === 0) ctx.fillText(Math.round(f), x - 12, ys + 18);
-  }
-
-  // --- Y-axis (amplitude) ---
-  const yTicks = 10;
-  for (let j = 0; j <= yTicks; j++) {
-    const y = ys - (j / yTicks) * (ys - 8);
-    const a = (j / yTicks) * maxAmp;
-    ctx.beginPath(); ctx.moveTo(xs - 5, y); ctx.lineTo(xs, y); ctx.stroke();
-    ctx.fillText(a.toFixed(1), 8, y + 4);
-  }
-}
-
-
-
-// =====================
-// Multi-track draw loop
-// =====================
-function draw() {
-  // only draw if we have at least one analyser running
-  const activeTracks = tracks.filter(t => t.analyser);
-  if (activeTracks.length === 0) return;
-
-  requestAnimationFrame(draw); // Schedule next frame
-
-  const w = canvas.width;
-  const h = canvas.height;
-  const nyquist = 20000;
-  const maxAmp = 1.0;
-
-   // height of plotting area
-  const plotH = h - MARGIN_BOTTOM - 10;
-
-  // clear background
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, w, h);
-  drawAxes(nyquist, maxAmp);
-
-  // assume all analysers use same fftSize
-  const refAnalyser = activeTracks[0].analyser;
-  const bufLen = refAnalyser.frequencyBinCount;
-
-  activeTracks.forEach(track => {
-    // honour per-track show checkbox
-    if (!track.show || !track.analyser) return;
-
-    const bins = new Uint8Array(bufLen);
-    track.analyser.getByteFrequencyData(bins);
-
-    ctx.globalAlpha = 0.9;
-    ctx.strokeStyle = track.color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    for (let i = 0; i < bufLen; i++) {
-      const v = bins[i] / 255;
-      const fMin = 20;
-      const frac = i / bufLen;
-      const f = fMin + frac * (nyquist - fMin);
-      const x = MARGIN_LEFT + frac * (w - MARGIN_LEFT - 10);
-      const y = (h - MARGIN_BOTTOM) - v * plotH;
-
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-
-    ctx.stroke();
-  });
-
-  ctx.globalAlpha = 1;
-}
-
 
 
 // =====================
@@ -504,7 +88,7 @@ function draw() {
 
 document.getElementById('start').addEventListener('click', () => {
   // check if any track currently has a live voice
-  const anyRunning = tracks.some(t => t.voice);
+  const anyRunning = vizTracks.some(t => t.voice);
 
   audioCtx.resume();
 
@@ -512,82 +96,5 @@ document.getElementById('start').addEventListener('click', () => {
     start();
   } else {
     stop();
-  }
-});
-
-
-
-
-// show/hide the right controls for each engine
-function toggleParamVisibility(){
-  const aOnly = document.querySelectorAll('.a-only');
-
-  // hide/show additive+KS params for A
-  aOnly.forEach(el=>{
-    if (el.id === 'pianoControlsA') return; // piano handled below
-    // visible if engine A is 'add' or 'ks'
-    el.style.display = (engineA.value==='add' || engineA.value==='ks') ? '' : 'none';
-  });
-
-  // pianoControlsA visible only if pianoSample
-  const pianoBlockA = document.getElementById('pianoControlsA');
-  if (pianoBlockA){
-    pianoBlockA.style.display = (engineA.value==='pianoSample') ? '' : 'none';
-  }
-}
-toggleParamVisibility();
-
-
-// Piano file load for A
-pianoFileA.addEventListener('change', async (e)=>{
-  if (!e.target.files || !e.target.files[0]) return;
-
-  pianoBufA = await decodeToBuffer(e.target.files[0]);
-
-  // assume the file's original pitch as 220 (change to relative)
-  pianoNominalHzA = parseFloat(pianoPitchSliderA.value) || 220;
-
-  // update time slider range based on sample duration
-  if (pianoBufA && pianoTimeSliderA){
-    pianoTimeSliderA.max = pianoBufA.duration.toFixed(2);
-  }
-
-  // if already running in pianoSample mode, rebuild audio graph to use this buffer
-  if (engineA.value === 'pianoSample' && voiceA){
-    stop();
-    audioCtx.resume();
-    start();
-  }
-});
-
-// controls playbackRate for the piano sample
-function updPianoPitchA(){
-  const hz = parseFloat(pianoPitchSliderA.value);
-  pianoPitchHzA = hz;
-  pianoPitchValA.textContent = hz.toFixed(0);
-
-  if (engineA.value === 'pianoSample' && pianoVoiceA && pianoVoiceA.setFreq){
-    pianoVoiceA.setFreq(hz);
-  }
-}
-pianoPitchSliderA.addEventListener('input', updPianoPitchA);
-
-// Piano time slider A (picks where inside the sample to start)
-function updPianoTimeA(){
-  const t = parseFloat(pianoTimeSliderA.value);
-  pianoOffsetA = t;
-  pianoTimeValA.textContent = t.toFixed(2);
-
-  if (engineA.value === 'pianoSample' && pianoVoiceA && pianoVoiceA.setStart){
-    pianoVoiceA.setStart(t);
-  }
-}
-pianoTimeSliderA.addEventListener('input', updPianoTimeA);
-
-// Piano play / retrigger
-pianoPlayA.addEventListener('click', ()=>{
-  if (engineA.value === 'pianoSample' && pianoVoiceA && pianoVoiceA.retrigger){
-    audioCtx.resume();
-    pianoVoiceA.retrigger();
   }
 });
