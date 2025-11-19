@@ -167,9 +167,8 @@
 </div>
 <!-- tracks A–F  -->
 <div class="row" id="extraTracks">
-
-  <div class="col">
-    <label>Engine A:
+<div class="col">
+      <label>Engine A:
       <select id="engineB">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -177,7 +176,15 @@
         <option value="add">String (additive)</option>
       </select>
     </label>
-    
+
+    <label>Freq A:
+      <input id="freqSliderA" type="range" min="50" max="2000" step="1">
+      <input id="freqInputA" type="number" min="50" max="2000" step="1" style="width:70px">
+      <span id="freqValA"></span>
+    </label>
+</div>
+
+  <div class="col">
     <label>Engine B:
       <select id="engineB">
         <option value="sinOsc">Sine oscillator</option>

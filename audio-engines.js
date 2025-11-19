@@ -141,67 +141,6 @@ function makeAdditiveString(f0, B, p){
   };
 }
 
-
-
-
-
-
-
-// Piano sample voice for engineA === 'pianoSample'
-//audiobuffer = decoded audiobuffer of sample
-//nominalpitchHz = estimate of pitch of sample
-//pitch = target pitch to play at now
-//offset = start pos (s)
-// pianovoiceA = current active voice object for A
-function makePianoSampleVoice(audioBuffer, {startSec = 0, pitchHz = 220, nominalHz = 220} ={}) {
-//create an audiobuffersourcenode, read file into it and play 
-//can change pitch via playback rate and where in file to start (start(when, offset))
-//wrap it in voice object so acts like other engines with .out, .setfreq, etc...
-  const outGain = audioCtx.createGain();
-  outGain.gain.value = 0.8;
-
-  let srcNode = null; 
-  let currentStartSec = startSec; 
-  let currentPitchHz = pitchHz;
-  let currentNominalHz = nominalHz;
-
-  function playNow() {
-    stop();
-
-    const src = audioCtx.createBufferSource();
-    src.buffer = audioBuffer;
-
-    // playbackRate = desiredPitch / nominalPitch
-    const ratio = currentNominalHz > 0 ? (currentPitchHz / currentNominalHz) : 1;
-    src.playbackRate.value = ratio;
-
-    const clampedStart = Math.min(
-      Math.max(currentStartSec, 0),
-      audioBuffer.duration - 0.001
-    );
-
-    src.connect(outGain);
-    src.start(0, clampedStart);
-
-    srcNode = src;
-  }
-
-  function stop(){
-    if (srcNode){
-      try{ srcNode.stop(); }catch(e){}
-      try{ srcNode.disconnect(); }catch(e){}
-      srcNode = null;
-    }
-  }
-
-  function setFreq(hz){
-    currentPitchHz = hz;
-    if (srcNode && currentNominalHz > 0){
-      const ratio = currentPitchHz / currentNominalHz;
-      srcNode.playbackRate.setValueAtTime(ratio, audioCtx.currentTime);
-    }
-  }
-
   function setStart(sec){
     currentStartSec = sec;
     // don't scrub mid play you hit retrigger to hear new slice
@@ -221,4 +160,3 @@ function makePianoSampleVoice(audioBuffer, {startSec = 0, pitchHz = 220, nominal
     retrigger,
     stop
   };
-}
