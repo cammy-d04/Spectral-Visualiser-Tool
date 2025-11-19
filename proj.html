@@ -164,63 +164,20 @@
   </label>
 </div>
 
+</div>
+<!-- tracks A–F  -->
+<div class="row" id="extraTracks">
 
-<div class="row">
-  <!-- Column A controls -->
   <div class="col">
     <label>Engine A:
-      <select id="engineA">
+      <select id="engineB">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
-        <option value="pianoSample">Piano sample (FLAC)</option>
       </select>
     </label>
-
-    <label>Freq A: 
-  <input id="freqSliderA" type="range" min="50" max="2000" step="1">
-  <input id="freqInputA" type="number" min="50" max="2000" step="1" style="width:70px">
-  <span id="freqValA"></span>
-</label>
-
-
-    <!-- Additive params for A -->
-    <label class="a-only">Inharmonicity A (B): <span id="BValA">0.000</span>
-      <input id="BSliderA" type="range" min="0" max="0.01" step="0.0001" value="0.0000">
-    </label>
-
-    <label class="a-only">Pluck pos A (0..1): <span id="posValA">0.20</span>
-      <input id="posSliderA" type="range" min="0.05" max="0.95" step="0.01" value="0.20">
-    </label>
-
-    <!-- Piano sample controls for A -->
-    <div class="a-only" id="pianoControlsA">
-      <label class="small">Piano file (FLAC/WAV/etc):
-        <input id="pianoFileA" type="file" accept=".flac,.wav,.mp3,.aiff,.aif,.ogg" />
-      </label>
-
-      <label class="small">Pitch A (Hz): <span id="pianoPitchValA">220</span>
-        <input id="pianoPitchSliderA" type="range" min="50" max="1000" step="1" value="220">
-      </label>
-
-      <label class="small">Time A (s): <span id="pianoTimeValA">0.00</span>
-        <input id="pianoTimeSliderA" type="range" min="0" max="5" step="0.01" value="0">
-      </label>
-
-      <button id="pianoPlayA">Play / Retrigger A</button>
-
-      <div class="note">
-        Load file and play
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-<!-- Extra tracks B–F (simpler: engine + frequency only) -->
-<div class="row" id="extraTracks">
-
-  <div class="col">
+    
     <label>Engine B:
       <select id="engineB">
         <option value="sinOsc">Sine oscillator</option>

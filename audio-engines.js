@@ -222,39 +222,3 @@ function makePianoSampleVoice(audioBuffer, {startSec = 0, pitchHz = 220, nominal
     stop
   };
 }
-
-
-
-
-//builds voices for A or B depending on engine
-function makeVoice(engine, f0, opts){
-
-  // pianoSample only for A for now
-  if (engine === 'pianoSample') {
-    if (!pianoBufA){
-      const g = audioCtx.createGain();
-      g.gain.value = 0.0;
-      return {
-        out: g,
-        setFreq: ()=>{},
-        setStart: ()=>{},
-        retrigger: ()=>{},
-        stop: ()=>{ g.disconnect(); }
-      };
-    }
-
-    // create pianoSample voice using global A state
-    pianoVoiceA = makePianoSampleVoice(pianoBufA, {
-      startSec: pianoOffsetA,
-      pitchHz: pianoPitchHzA,
-      nominalHz: pianoNominalHzA
-    });
-
-    return pianoVoiceA;
-  }
-
-  if(engine === 'sinOsc')       return makeSinOsc(f0);
-  if(engine === 'triangleOsc')  return makeTriOsc(f0);
-  if(engine === 'squareOsc')    return makeSquareOsc(f0);
-  if(engine === 'add')          return makeAdditiveString(f0, opts.B || 0, opts.pos || 0.2);
-}
