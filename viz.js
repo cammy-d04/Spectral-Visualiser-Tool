@@ -1,4 +1,5 @@
 let vizTracks = [];
+let pausedViz = false;
 
 
 // Canvases
@@ -51,20 +52,38 @@ function drawAxes(maxFreq, maxAmp){
   // x-axis
   ctx.beginPath(); ctx.moveTo(xs, ys); ctx.lineTo(w, ys); ctx.stroke();
 
-  // --- X-axis (frequency) ---
-  const fMin = 0;                  // start at 20hz
-  const fMax = maxFreq;  
-  const ticks = 100;                 // more subdivisions
+ // --- X-axis (frequency) ---
+const fMin = 0;
+const fMax = maxFreq;
+const ticks = 100;
 
-  for (let i = 0; i <= ticks; i++) {
-    const frac = i / ticks;
-    const f = fMin + frac * (fMax - fMin);
-    const x = xs + frac * (w - xs - 8);
-    ctx.beginPath(); ctx.moveTo(x, ys); ctx.lineTo(x, ys + 5); ctx.stroke();
+for (let i = 0; i <= ticks; i++) {
+  const frac = i / ticks;
 
-    // label roughly every 5th tick
-    if (i % 5 === 0) ctx.fillText(Math.round(f), x - 12, ys + 18);
+  // frequency label stays constant
+  const f = fMin + frac * (fMax - fMin);
+
+  // Apply zoom to position only
+  let zoomedFrac = frac * xZoom;
+
+  // If the tick is past the view window, stop drawing
+  if (zoomedFrac > 1) break;
+
+  const x = xs + zoomedFrac * (w - xs - 8);
+
+  // tick mark
+  ctx.beginPath();
+  ctx.moveTo(x, ys);
+  ctx.lineTo(x, ys + 5);
+  ctx.stroke();
+
+  // labels
+  if (i % 5 === 0) {
+    ctx.fillText(Math.round(f), x - 12, ys + 18);
   }
+}
+
+
 
   // --- Y-axis (amplitude) ---
   const yTicks = 10;
@@ -81,6 +100,7 @@ function drawAxes(maxFreq, maxAmp){
 // Multi-track draw loop
 // =====================
 function draw() {
+  if (pausedViz) return;
   // only draw if we have at least one analyser running
   const activeTracks = vizTracks.filter(t => t.analyser);
   if (activeTracks.length === 0) return;
@@ -121,8 +141,15 @@ function draw() {
       const fMin = 20;
       const frac = i / bufLen;
       const f = fMin + frac * (nyquist - fMin);
-      const x = MARGIN_LEFT + frac * (w - MARGIN_LEFT - 10);
       const y = (h - MARGIN_BOTTOM) - v * plotH;
+
+      let zoomedFrac = frac * xZoom;
+
+      // clamp so it doesn't run off canvas
+      if (zoomedFrac > 1) zoomedFrac = 1;
+
+      const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
+
 
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);

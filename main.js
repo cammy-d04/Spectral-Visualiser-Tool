@@ -66,6 +66,32 @@ setTracks(tracks);
 
 
 
+let masterLoopTimer = null;
+
+function triggerFileTracks() {
+  const dur = getShortestFileDuration();
+  if (dur == null) {
+    console.log("No file buffers loaded");
+    return;
+  }
+
+  vizTracks.forEach(t => {
+    if (t.engine === "file" && t.fileBuffer) {
+
+      // rebuild a fresh AudioBufferSourceNode
+      t.buildAudioGraph();
+
+      if (t.fileSource) {
+        // start playback
+        t.fileSource.start(0);
+
+        // stop playback after shortest duration
+        t.fileSource.stop(audioCtx.currentTime + dur);
+      }
+    }
+  });
+}
+
 
 
 // =====================
@@ -73,12 +99,27 @@ setTracks(tracks);
 // =====================
 function start() {
   audioCtx.resume();
-  vizTracks.forEach(t => t.buildAudioGraph());
+  vizTracks.forEach(t => {
+    t.buildAudioGraph();
+    t.start();              
+  });
   draw();
 }
 
+
 function stop() {
   vizTracks.forEach(t => t.stop());
+}
+
+
+function getShortestFileDuration() {
+  const durations = vizTracks
+    .filter(t => t.fileBuffer)
+    .map(t => t.fileBuffer.duration);
+
+  if (durations.length === 0) return null;
+
+  return Math.min(...durations);
 }
 
 
@@ -87,14 +128,57 @@ function stop() {
 // =====================
 
 document.getElementById('start').addEventListener('click', () => {
-  // check if any track currently has a live voice
-  const anyRunning = vizTracks.some(t => t.voice);
+
+  console.log("=== START BUTTON CLICKED ===");
+
+  const anyRunning = vizTracks.some(t => {
+    console.log(`Track ${t.id}: voice=${!!t.voice}, fileSource=${!!t.fileSource}`);
+    return (t.voice || t.fileSource);
+  });
+
+  console.log("anyRunning =", anyRunning);
 
   audioCtx.resume();
 
   if (!anyRunning) {
+    console.log("-> calling start()");
     start();
   } else {
+    console.log("-> calling stop()");
     stop();
+  }
+});
+
+document.getElementById("masterLoop").addEventListener("click", () => {
+  if (masterLoopTimer) {
+    clearInterval(masterLoopTimer);
+    masterLoopTimer = null;
+    console.log("Master loop disabled");
+    return;
+  }
+
+  const secs = parseFloat(document.getElementById("loopInterval").value) || 2;
+  const ms = secs * 1000;
+
+  masterLoopTimer = setInterval(triggerFileTracks, ms);
+
+  console.log("Master loop enabled, period =", secs, "s");
+});
+
+
+let xZoom = 1;
+
+document.getElementById("xZoom").addEventListener("input", e => {
+  xZoom = parseFloat(e.target.value);
+});
+
+
+document.getElementById("pauseViz").addEventListener("click", () => {
+  pausedViz = !pausedViz;
+  console.log("Viz paused =", pausedViz);
+
+  if (!pausedViz) {
+    // if we're unpausing, restart the loop cleanly
+    requestAnimationFrame(draw);
   }
 });

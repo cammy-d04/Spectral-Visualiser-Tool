@@ -140,6 +140,15 @@
   <span class="chip"><span class="dot f"></span>F (gold)</span>
 </div>
 
+<div class="row">
+  <label>
+    Loop interval (seconds):
+    <input id="loopInterval" type="number" value="2" min="0.1" step="0.1">
+  </label>
+  <button id="masterLoop">Toggle Master Loop</button>
+</div>
+
+
 
 <!--toggle track on and off, wired to each track as showCheckboxes-->
 <!--control whether audible and drawn-->
@@ -164,16 +173,16 @@
   </label>
 </div>
 
-</div>
 <!-- tracks A–F  -->
 <div class="row" id="extraTracks">
 <div class="col">
       <label>Engine A:
-      <select id="engineB">
+      <select id="engineA">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -182,6 +191,11 @@
       <input id="freqInputA" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValA"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputA" accept="audio/*">
+</label>
+
 </div>
 
   <div class="col">
@@ -191,6 +205,7 @@
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -199,6 +214,11 @@
       <input id="freqInputB" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValB"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputB" accept="audio/*">
+</label>
+
   </div>
   
   <div class="col">
@@ -208,6 +228,8 @@
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
+
       </select>
     </label>
 
@@ -216,6 +238,10 @@
       <input id="freqInputC" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValC"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputC" accept="audio/*">
+</label>
   </div>
 
   <div class="col">
@@ -225,6 +251,8 @@
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
+
       </select>
     </label>
 
@@ -233,6 +261,11 @@
       <input id="freqInputD" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValD"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputD" accept="audio/*">
+</label>
+
   </div>
 
   <div class="col">
@@ -242,6 +275,7 @@
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -250,6 +284,11 @@
       <input id="freqInputE" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValE"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputE" accept="audio/*">
+</label>
+
   </div>
 
   <div class="col">
@@ -259,6 +298,7 @@
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -267,8 +307,18 @@
       <input id="freqInputF" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValF"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputF" accept="audio/*">
+</label>
+
   </div>
 </div>
+<label>
+  X-Zoom:
+  <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
+</label>
+<button id="pauseViz">Pause/Unpause Viz</button>
 
 
 <!-- Canvas 1: frequency-domain spectra (overlaid) -->

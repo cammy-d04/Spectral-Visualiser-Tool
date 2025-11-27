@@ -7,6 +7,7 @@
 
 // make basic sine wave oscillator voice
 function makeSinOsc(f){
+  console.log("makeSinOsc", f);
   const osc = audioCtx.createOscillator();
   osc.type = 'sine';
   const g = audioCtx.createGain();
@@ -29,11 +30,12 @@ function makeSinOsc(f){
 
 // triangle wave oscillator voice
 function makeTriOsc(f){
+  console.log("makeTriOsc", f);
   const osc = audioCtx.createOscillator();
   osc.type = 'triangle';
   const g = audioCtx.createGain();
   g.gain.value = 0.12;
-  osc.frequency.value = f;
+  osc.frequency.value = f; 
   osc.connect(g);
   osc.start();
 
@@ -51,6 +53,7 @@ function makeTriOsc(f){
 
 // square wave oscillator voice
 function makeSquareOsc(f){
+  console.log("makeSquareOsc", f);
   const osc = audioCtx.createOscillator();
   osc.type = 'square';
   const g = audioCtx.createGain();
@@ -71,13 +74,34 @@ function makeSquareOsc(f){
   };
 }
 
+function makeVoice(engine, f0, opts = {}) {
+  console.log("makeVoice", engine, f0);
+  const B   = (opts.B != null) ? opts.B : 0;
+  const pos = (opts.pos != null) ? opts.pos : 0.2;
 
+  switch (engine) {
+    case 'sinOsc':
+      return makeSinOsc(f0);
+    case 'triangleOsc':
+      return makeTriOsc(f0);
+    case 'squareOsc':
+      return makeSquareOsc(f0);
+    case 'add':
+      // additive string voice uses f0, B, pluck position
+      return makeAdditiveString(f0, B, pos);
+    default:
+      console.warn('Unknown engine', engine, 'defaulting to sine');
+      return makeSinOsc(f0);
+  }
+}
+window.makeVoice = makeVoice;
 
 
 // Additive string model with slight inharmonicity
 // f_n = n f0 * sqrt(1 + B n^2)
 // amplitude_n = (sin(pi n p) / n) to mimic pluck position p in (0,1)
 function makeAdditiveString(f0, B, p){
+  console.log("makeAdditiveString", f0, B, p);
   const group = audioCtx.createGain();
   group.gain.value = 0.09;
   const N = 24; // TWENTY FOUR PARTIALS
@@ -140,23 +164,3 @@ function makeAdditiveString(f0, B, p){
     }
   };
 }
-
-  function setStart(sec){
-    currentStartSec = sec;
-    // don't scrub mid play you hit retrigger to hear new slice
-  }
-
-  function retrigger(){
-    playNow();
-  }
-
-  // fire once on creation so A behaves like other engines and is audible immediately
-  playNow();
-
-  return {
-    out: outGain,
-    setFreq,
-    setStart,
-    retrigger,
-    stop
-  };
