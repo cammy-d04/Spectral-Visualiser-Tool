@@ -109,7 +109,7 @@ function draw() {
 
   const w = canvas.width;
   const h = canvas.height;
-  const nyquist = 20000;
+  const nyquist = audioCtx.sampleRate / 2;
   const maxAmp = 1.0;
 
    // height of plotting area

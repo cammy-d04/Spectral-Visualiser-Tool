@@ -8,13 +8,69 @@
 <style>
   body {
     font-family: system-ui, sans-serif;
-    background: #fff;
-    color: #111;
+    background: #c5a4ff;
+    color: #000000;
     margin: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
+
+  #layout {
+  display: flex;
+  width: 100%;
+  max-width: 1500px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 300px;
+  flex-shrink: 0;
+  background: #8b8b8a;
+  border-right: 4px solid #5f5f5f;
+  border-left: 10px solid #8b8b8a;
+  border-top: 10px solid #8b8b8a;
+  border-bottom: 10px solid #8b8b8a;
+
+   /* scrollable stuff */
+  height: calc(100vh - 80px); /* adjust if header is taller/shorter */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px; /* stops content hiding under scrollbar */
+}
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0; /* stops overflow issues */
+}
+
+#maincontrols {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;          /* wraps nicely on smaller widths */
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px;
+  background: #c7c7c7;
+  border: 1px solid #373737;
+  border-radius: 8px;
+}
+
+#visualisations {
+  width: 100%;
+}
+
+
+
 
   h1 {
     font-size: 1.1rem;
@@ -44,14 +100,18 @@
 
   canvas {
     background: #fff;
-    width: 92vw;
+    width: 55vw;
     margin: 8px 0;
     border: 1px solid #ccc;
   }
 
   #viz {
-    height: 52vh;
+    height: 35vh;
   }
+  #viz2 {
+    height: 35vh;
+  }
+  
 
   button,
   input,
@@ -92,9 +152,10 @@
     align-items: stretch;
     gap: 6px;
     min-width: 260px;
-    border: 1px solid #eee;
+    border: 1px solid #373737;
     border-radius: 8px;
     padding: 8px 12px;
+    background: #c7c7c7;
   }
 
   label {
@@ -126,57 +187,13 @@
 </style>
 </head>
 <body>
-
 <h1>Harmonics / Spectra Visualisation</h1>
 
-<div class="row">
-  <!-- Play/stop button and legend (colours match track)-->
-  <button id="start">Start/Stop</button>
-  <span class="chip"><span class="dot a"></span>A (red)</span>
-  <span class="chip"><span class="dot b"></span>B (blue)</span>
-  <span class="chip"><span class="dot c"></span>C (green)</span>
-  <span class="chip"><span class="dot d"></span>D (orange)</span>
-  <span class="chip"><span class="dot e"></span>E (purple)</span>
-  <span class="chip"><span class="dot f"></span>F (gold)</span>
-</div>
-
-<div class="row">
-  <label>
-    Loop interval (seconds):
-    <input id="loopInterval" type="number" value="2" min="0.1" step="0.1">
-  </label>
-  <button id="masterLoop">Toggle Master Loop</button>
-</div>
-
-
-
-<!--toggle track on and off, wired to each track as showCheckboxes-->
-<!--control whether audible and drawn-->
-<div class="row" id="visToggles">
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showA" checked> Show A
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showB" checked> Show B
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showC" checked> Show C
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showD" checked> Show D
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showE" checked> Show E
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showF" checked> Show F
-  </label>
-</div>
-
-<!-- tracks A–F  -->
-<div class="row" id="extraTracks">
-<div class="col">
+<div id="layout">
+  <div id="sidebar">
+    <div class="col">
       <label>Engine A:
+      <span class="chip"><span class="dot a"></span></span>
       <select id="engineA">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -195,11 +212,19 @@
     <label>Load file:
   <input type="file" id="fileInputA" accept="audio/*">
 </label>
+    <label>File Pitch A:
+      <input id="filePitchA" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showA" checked> Show A
+  </label>
 
 </div>
 
   <div class="col">
     <label>Engine B:
+      <span class="chip"><span class="dot b"></span></span>
       <select id="engineB">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -219,10 +244,19 @@
   <input type="file" id="fileInputB" accept="audio/*">
 </label>
 
+    <label>File Pitch B:
+      <input id="filePitchB" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showB" checked> Show B
+  </label>
+
   </div>
   
   <div class="col">
     <label>Engine C:
+      <span class="chip"><span class="dot c"></span></span>
       <select id="engineC">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -242,10 +276,19 @@
     <label>Load file:
   <input type="file" id="fileInputC" accept="audio/*">
 </label>
+
+    <label>File Pitch C:
+      <input id="filePitchC" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showC" checked> Show C
+  </label>
   </div>
 
   <div class="col">
     <label>Engine D:
+      <span class="chip"><span class="dot d"></span></span>
       <select id="engineD">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -265,11 +308,19 @@
     <label>Load file:
   <input type="file" id="fileInputD" accept="audio/*">
 </label>
+    <label>File Pitch D:
+      <input id="filePitchD" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showD" checked> Show D
+  </label>
 
   </div>
 
   <div class="col">
     <label>Engine E:
+      <span class="chip"><span class="dot e"></span></span>
       <select id="engineE">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -288,11 +339,19 @@
     <label>Load file:
   <input type="file" id="fileInputE" accept="audio/*">
 </label>
+    <label>File Pitch E:
+      <input id="filePitchE" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showE" checked> Show E
+  </label>
 
   </div>
 
   <div class="col">
     <label>Engine F:
+      <span class="chip"><span class="dot f"></span></span>
       <select id="engineF">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
@@ -311,18 +370,60 @@
     <label>Load file:
   <input type="file" id="fileInputF" accept="audio/*">
 </label>
+    <label>File Pitch F:
+      <input id="filePitchF" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showF" checked> Show F
+  </label>
 
   </div>
+  </div>
+
+
+
+
+<div id="main">
+  <div id="maincontrols">
+    <button id="start">Start/Stop</button>
+    <button id="pauseViz">Pause</button>
+    <button id="masterLoop">Toggle Master Loop</button>
+
+    <label>
+      Loop interval (seconds):
+      <input id="loopInterval" type="number" value="2" min="0.1" step="0.1">
+    </label>
+
+    <label>
+      X-Zoom:
+      <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
+    </label>
+  </div>
+
+  <div id="visualisations">
+    <canvas id="viz"></canvas>
+    <canvas id="viz2"></canvas>
+  </div>
+
+  <div id="viz2controls">
+    <select id="v2trackselect">
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+      <option value="E">E</option>
+      <option value="F">F</option>
+  </div>
 </div>
-<label>
-  X-Zoom:
-  <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
-</label>
-<button id="pauseViz">Pause/Unpause Viz</button>
 
 
-<!-- Canvas 1: frequency-domain spectra (overlaid) -->
-<canvas id="viz"></canvas>
+
+
+
+
+
 
 <script src="audio-engines.js"></script>
 <script src="tracks.js"></script>

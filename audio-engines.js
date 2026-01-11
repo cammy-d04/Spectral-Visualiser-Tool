@@ -164,3 +164,19 @@ function makeAdditiveString(f0, B, p){
     }
   };
 }
+
+
+// TODO: Move file engine to this file 
+function makeFileEngine(audioCtx, buffer, originalFreq = 440){
+
+   const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+
+  return {
+    in: null,
+    out: src,
+    setFreq: (hz) => { src.playbackRate.value = freq/originalFreq; },
+    stop: () => { src.stop(); src.disconnect(); }
+};
+}

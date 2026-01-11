@@ -27,7 +27,14 @@ class Track {
     this.fileInput = null;       // the <input type="file"> assigned to this track
     this.fileInput = document.getElementById("fileInput" + this.id);
     this.fileInput.addEventListener("change", () => this.loadFile());
+    this.pitchSlider = document.getElementById("filePitch" + this.id);
 
+    this.pitchSlider.addEventListener("input", () => {
+  if (this.engine === "file" && this.voice && this.voice.src) {
+    const r = parseFloat(this.pitchSlider.value);
+    this.voice.src.playbackRate.setValueAtTime(r, audioCtx.currentTime);
+  }
+});
 
 
     // audio nodes
@@ -115,6 +122,10 @@ class Track {
     }
   }
 
+
+
+
+
   buildAudioGraph() {
   console.log(`buildAudioGraph(${this.id}) engine=${this.engineSelect.value}`);
 
@@ -148,6 +159,10 @@ class Track {
     } else {
       console.log(`Track ${this.id}: building fileSource`);
       const src = audioCtx.createBufferSource();
+      src.playbackRate.setValueAtTime(
+      parseFloat(this.pitchSlider.value),
+      audioCtx.currentTime
+      );
       src.buffer = this.fileBuffer;
       src.loop = true;
       src.connect(this.analyser).connect(this.gain);
