@@ -1,26 +1,26 @@
-let vizTracks = [];
-let pausedViz = false;
+let vizTracks = []; //list of tracks we want to draw
+let pausedViz = false; //global pause flag
 
 
 // Canvases
-const canvas = document.getElementById('viz');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('viz'); //get canvas element
+const ctx = canvas.getContext('2d'); //2d drawing context so can draw lines n stuff
 
-function setTracks(tracks) {
+function setTracks(tracks) { //tracks to visualise setter
   vizTracks = tracks;
 }
 
-function startViz() {
-  requestAnimationFrame(draw);
+function startViz() { 
+  requestAnimationFrame(draw);//begin animation loop
 }
 
 
-//create analyser with consistent FFT size
+//create analyser with consistent FFT size across all tracks
 // 2048 point FFT gives 11hz bins at 44100hz sample rate
 function makeAnalyser(){
-  const an = audioCtx.createAnalyser();
-  an.fftSize = 2048;
-  return an;
+  const analyser = audioCtx.createAnalyser();// analyser reads audio data from track
+  analyser.fftSize = 2048;
+  return analyser;
 }
 
 
@@ -35,9 +35,9 @@ window.addEventListener('resize', resize);
 resize();
 
 
-const MARGIN_LEFT = 50, MARGIN_BOTTOM = 30;
+const MARGIN_LEFT = 50, MARGIN_BOTTOM = 30; //layout constants
 
-function drawAxes(maxFreq, maxAmp){
+function drawAxes(maxFreq, maxAmp){ //draws static axes
   const w = canvas.width, h = canvas.height;
   const xs = MARGIN_LEFT;
   const ys = h - MARGIN_BOTTOM;
@@ -52,7 +52,8 @@ function drawAxes(maxFreq, maxAmp){
   // x-axis
   ctx.beginPath(); ctx.moveTo(xs, ys); ctx.lineTo(w, ys); ctx.stroke();
 
- // --- X-axis (frequency) ---
+
+// --- X-axis (frequency) --- 
 const fMin = 0;
 const fMax = maxFreq;
 const ticks = 100;
@@ -60,7 +61,7 @@ const ticks = 100;
 for (let i = 0; i <= ticks; i++) {
   const frac = i / ticks;
 
-  // frequency label stays constant
+  // frequency labels stays constant
   const f = fMin + frac * (fMax - fMin);
 
   // Apply zoom to position only
@@ -96,6 +97,8 @@ for (let i = 0; i <= ticks; i++) {
 }
 
 
+
+
 // =====================
 // Multi-track draw loop
 // =====================
@@ -128,35 +131,120 @@ function draw() {
     // honour per-track show checkbox
     if (!track.show || !track.analyser) return;
 
-    const bins = new Uint8Array(bufLen);
+    // fill bins with sound data (energy per bin) from analyser
+    const bins = new Uint8Array(bufLen); 
     track.analyser.getByteFrequencyData(bins);
+
+
+
+
+    // --- Peak picking code ---
+    const MIN_BIN = 2;             // avoid edge cases
+    const MAX_PEAKS = 12;          // limit number of peaks
+    const THRESH = 40;             // threshold so ignores small peaks 0–255, tune this
+    const MIN_SEP_BINS = 3;        // don't label clustered ripples
+    const peaks = []; // collect peaks as {i, mag}
+
+    for (let i = MIN_BIN; i < bufLen-2; i++) {
+      const mag = bins[i];
+      // local max
+      if (mag > bins[i - 1] && mag >= bins[i + 1] && mag > THRESH) {
+        peaks.push({ i, mag });
+      }
+    }
+    // sort strongest first
+    peaks.sort((a, b) => b.mag - a.mag);
+
+    // keep top peaks but enforce min spacing in bins
+    const chosenPeaks = [];
+    for (const p of peaks) {
+      if (chosenPeaks.length >= MAX_PEAKS) break;
+
+      const tooClose = chosenPeaks.some(q => Math.abs(q.i - p.i) < MIN_SEP_BINS);
+      if (!tooClose) {
+        chosenPeaks.push(p);
+      }
+    }
+
+    // ---- Store peaks for reuse (dissonance curve, etc.) ----
+    const binHz = audioCtx.sampleRate / track.analyser.fftSize;
+
+    track.peaks = chosenPeaks.map(p => {
+      const f = p.i * binHz;        // Hz
+      let a = p.mag / 255;          // normalised amplitude 0–1
+      // optional: compress so one peak doesn't dominate
+      a = Math.sqrt(a);             // comment out if you don't want it
+      return { f, a, bin: p.i };
+      });
+
+      track.peaksUpdatedAt = performance.now();
+
+    
+
 
     ctx.globalAlpha = 0.9;
     ctx.strokeStyle = track.color;
     ctx.lineWidth = 2;
-    ctx.beginPath();
+    ctx.beginPath(); //start a polyline
 
-    for (let i = 0; i < bufLen; i++) {
-      const v = bins[i] / 255;
-      const fMin = 20;
-      const frac = i / bufLen;
-      const f = fMin + frac * (nyquist - fMin);
-      const y = (h - MARGIN_BOTTOM) - v * plotH;
 
-      let zoomedFrac = frac * xZoom;
+    for (let i = 0; i < bufLen; i++) {//loop over bins
+      const v = bins[i] / 255; //normalise magnitude to between 0 and 1
+      const fMin = 20; // minimum frequency to display  
+      const frac = i / bufLen; 
+      const f = fMin + i / bufLen * (nyquist - fMin); // actual frequency at this bin
+      const y = (h - MARGIN_BOTTOM) - v * plotH; // convert amplitude to vertical pixel position
 
+
+
+      let zoomedFrac = frac * xZoom; //apply zoom to x position only 
       // clamp so it doesn't run off canvas
       if (zoomedFrac > 1) zoomedFrac = 1;
 
+
+      //map frequency position to horizontal pixel
       const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
 
-
+      //poly line drawing boilerplate
+      //forst point starts path, subsequent points extend it
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-
+    //draw polyline
     ctx.stroke();
+
+    // draw peak labels after the line so they appear on top
+    ctx.fillStyle = track.color;
+    ctx.font = '12px sans-serif';
+
+    for (const p of chosenPeaks) {
+      const i = p.i;
+      const v = bins[i] / 255;
+
+      const frac = i / bufLen;
+      let zoomedFrac = frac * xZoom;
+      if (zoomedFrac > 1) zoomedFrac = 1;
+
+      const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
+      const y = (h - MARGIN_BOTTOM) - v * plotH;
+
+      // convert bin index to frequency 
+      const fHz = i * (audioCtx.sampleRate / track.analyser.fftSize);
+
+      // small dot marker
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // label slightly above
+      ctx.fillText(`${Math.round(fHz)}Hz`, x + 4, y - 6);
+}
+
+
+
+
   });
 
   ctx.globalAlpha = 1;
 }
+

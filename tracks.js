@@ -21,6 +21,14 @@ class Track {
     this.brightSlider = opts.brightSliderId ? document.getElementById(opts.brightSliderId) : null;
     this.brightLabel  = opts.brightLabelId  ? document.getElementById(opts.brightLabelId)  : null;
 
+    this.peaks = [];              // stores tracks peaks
+    //optional stuff
+    this.peaks = [];              // latest extracted spectral peaks
+    this.peaksUpdatedAt = 0;      // performance.now() timestamp of last update
+    this._lastPeakTime = 0;       // internal throttle for peak extraction
+    this._bins = null;            // cached FFT bin buffer (Uint8Array)
+
+
     //file loading stuff
     this.fileBuffer = null;      // decoded AudioBuffer
     this.fileSource = null;      // current AudioBufferSourceNode

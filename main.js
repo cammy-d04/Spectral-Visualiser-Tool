@@ -63,6 +63,8 @@ tracks = [
 ];
 
 setTracks(tracks); 
+startViz2(tracks[0]);
+ 
 
 
 
