@@ -66,11 +66,24 @@
 }
 
 #visualisations {
+  flex: 1;
+  min-width: 0;
+}
+
+#vizRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
   width: 100%;
 }
 
-
-
+#tuningPanel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
   h1 {
     font-size: 1.1rem;
@@ -100,7 +113,7 @@
 
   canvas {
     background: #fff;
-    width: 55vw;
+    width: 100%;
     margin: 8px 0;
     border: 1px solid #ccc;
   }
@@ -402,12 +415,73 @@
     </label>
   </div>
 
+
+
+
+
+
+
+
+
+<div id="vizRow">
   <div id="visualisations">
     <canvas id="viz"></canvas>
     <canvas id="viz2"></canvas>
   </div>
 
-  <div id="viz2controls">
+
+
+
+
+
+
+
+<div id="tuningPanel">
+  <div class="col" style="min-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;">Peak picker</div>
+
+  <label class="small">
+    Threshold (fraction of max bin): <span id="threshFracVal">0.20</span>
+    <input id="threshFrac" type="range" min="0.05" max="0.60" value="0.20" step="0.01">
+  </label>
+
+  <label class="small">
+    Max peaks picked: <span id="maxPeaksVal">20</span>
+    <input id="maxPeaksPicked" type="range" min="4" max="60" value="20" step="1">
+  </label>
+
+  <label class="small">
+    Min separation (Hz): <span id="minSepHzVal">30</span>
+    <input id="minSepHz" type="range" min="5" max="120" value="30" step="1">
+  </label>
+
+  <label class="small">
+    Peak fMin (Hz): <span id="peakFMinVal">60</span>
+    <input id="peakFMin" type="range" min="20" max="400" value="60" step="1">
+  </label>
+</div>
+
+<div class="col" style="min-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;">Dissonance curve</div>
+
+  <label class="small">
+    Amp compress: <span id="ampCompressVal">0.50</span>
+    <input id="ampCompress" type="range" min="0.20" max="1.00" value="0.50" step="0.01">
+  </label>
+
+  <label class="small">
+    Cents step:
+    <select id="centsStep">
+      <option value="1">1</option>
+      <option value="5">5</option>
+      <option value="10" selected>10</option>
+      <option value="20">20</option>
+      <option value="25">25</option>
+    </select>
+  </label>
+
+    <label class="small">
+    Viz2 track:
     <select id="v2trackselect">
       <option value="A">A</option>
       <option value="B">B</option>
@@ -415,7 +489,12 @@
       <option value="D">D</option>
       <option value="E">E</option>
       <option value="F">F</option>
-  </div>
+    </select>
+  </label>
+</div>
+</div>
+</div>
+
 </div>
 
 

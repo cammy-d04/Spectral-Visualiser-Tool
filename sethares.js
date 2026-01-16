@@ -162,6 +162,8 @@ function resizeViz2() {
   canvas2.width = canvas2.clientWidth;
   canvas2.height = canvas2.clientHeight;
 }
+
+
 window.addEventListener('resize', resizeViz2);
 resizeViz2();
 
@@ -228,10 +230,10 @@ let selectedTrack = null;
 // Throttle curve computation (curve math is heavier than drawing)
 let lastCurveTime = 0;
 let cachedCurve = null;
-const CURVE_HZ = 12; // compute curve 12 times/sec
+const CURVE_HZ = 60; // compute curve 60 times/sec
 const CURVE_MS = 1000 / CURVE_HZ;
 
-
+    
 
 
 function drawViz2() {
@@ -257,10 +259,10 @@ function drawViz2() {
   const now = performance.now();
   if (!cachedCurve || (now - lastCurveTime) >= CURVE_MS) {
     cachedCurve = buildDissonanceCurve(peaks, {
-      maxPeaks: 30,
-      centsStep: 10,
-      normalizeCurve: true,
-      ampCompress: 0.5
+        maxPeaks: 30,
+        centsStep: window.centsStep ?? 10,
+        normalizeCurve: true,
+        ampCompress: window.ampCompress ?? 0.5
     });
     lastCurveTime = now;
   }
@@ -269,14 +271,14 @@ function drawViz2() {
   if (!curve || curve.cents.length === 0) return;
 
   // Plot line
-  const xs = MARGIN2_LEFT;
-  const ys = h - MARGIN2_BOTTOM;
-  const plotW = (w - xs - 10);
-  const plotH = (h - MARGIN2_BOTTOM - 10);
+  const xs = MARGIN2_LEFT; // leaves room for labels
+  const ys = h - MARGIN2_BOTTOM; 
+  const plotW = (w - xs - 10); //width of usable plotting area
+  const plotH = (h - MARGIN2_BOTTOM - 10); //right padding so strokes dont clip
 
-  ctx2.globalAlpha = 0.9;
+  ctx2.globalAlpha = 0.9; //transparency
   ctx2.strokeStyle = selectedTrack.color || '#000';
-  ctx2.lineWidth = 2;
+  ctx2.lineWidth = 2; //thickness
   ctx2.beginPath();
 
   for (let i = 0; i < curve.cents.length; i++) {
@@ -289,14 +291,40 @@ function drawViz2() {
     if (i === 0) ctx2.moveTo(x, y);
     else ctx2.lineTo(x, y);
   }
-
   ctx2.stroke();
   ctx2.globalAlpha = 1;
 
-  // Optional: label which track
-  ctx2.fillStyle = '#333';
-  ctx2.font = '12px sans-serif';
-  ctx2.fillText(`Track ${selectedTrack.id} dissonance curve`, xs + 10, 16);
+
+
+  const INTERVAL_LINES = [ // intervals to be overlayed in cents with labels
+    { cents: 0,    label: "1/1" },
+    { cents: 316,  label: "6/5" },
+    { cents: 386,  label: "5/4" },
+    { cents: 500,  label: "4/3" },
+    { cents: 700,  label: "3/2" },
+    { cents: 1200, label: "2/1" },
+  ];
+
+  ctx2.save();
+  ctx2.globalAlpha = 0.4;
+  ctx2.strokeStyle = "#0000006d";
+  ctx2.fillStyle = "#000";
+  ctx2.lineWidth = 1;
+  ctx2.font = "10px sans-serif";
+
+  for (const interval of INTERVAL_LINES) {
+    const x = xs + (interval.cents / 1200) * plotW;
+
+    // vertical line
+    ctx2.beginPath();
+    ctx2.moveTo(x, ys);
+    ctx2.lineTo(x, ys - plotH);
+    ctx2.stroke();
+
+
+    ctx2.fillText(interval.label, x + 2, ys - 6);
+  }
+  ctx2.restore();
 }
 
 // Call this once after tracks exist, e.g. in main.js after setTracks(tracks)

@@ -99,6 +99,23 @@ for (let i = 0; i <= ticks; i++) {
 
 
 
+
+function ensureTrackVizBuffers(track) {
+  const bufLen = track.analyser.frequencyBinCount;
+
+  if (!track._bins || track._bins.length !== bufLen) {
+    track._bins = new Uint8Array(bufLen);
+  }
+
+  // Optional: cache bin->Hz scale
+  track._binHz = audioCtx.sampleRate / track.analyser.fftSize;
+}
+
+
+
+
+
+
 // =====================
 // Multi-track draw loop
 // =====================
@@ -132,18 +149,28 @@ function draw() {
     if (!track.show || !track.analyser) return;
 
     // fill bins with sound data (energy per bin) from analyser
-    const bins = new Uint8Array(bufLen); 
-    track.analyser.getByteFrequencyData(bins);
+    ensureTrackVizBuffers(track);
+    track.analyser.getByteFrequencyData(track._bins);
+    const bins = track._bins;
 
 
 
 
     // --- Peak picking code ---
-    const MIN_BIN = 2;             // avoid edge cases
-    const MAX_PEAKS = 12;          // limit number of peaks
-    const THRESH = 40;             // threshold so ignores small peaks 0–255, tune this
-    const MIN_SEP_BINS = 3;        // don't label clustered ripples
-    const peaks = []; // collect peaks as {i, mag}
+    const MAX_PEAKS = window.maxPeaksPicked ?? 20;
+
+    let maxBin = 0;
+    for (let k = 0; k < bufLen; k++) {
+      if (bins[k] > maxBin){
+         maxBin = bins[k];
+        }
+    }
+    //parameters wired to controls
+    const THRESH = (window.threshFrac ?? 0.2) * maxBin;
+    const binHz = audioCtx.sampleRate / track.analyser.fftSize;
+    const MIN_SEP_BINS = Math.max(1, Math.round((window.minSepHz ?? 30) / binHz));
+    const MIN_BIN = Math.max(2, Math.round((window.peakFMin ?? 60) / binHz));
+    const peaks = [];
 
     for (let i = MIN_BIN; i < bufLen-2; i++) {
       const mag = bins[i];
@@ -166,8 +193,6 @@ function draw() {
       }
     }
 
-    // ---- Store peaks for reuse (dissonance curve, etc.) ----
-    const binHz = audioCtx.sampleRate / track.analyser.fftSize;
 
     track.peaks = chosenPeaks.map(p => {
       const f = p.i * binHz;        // Hz

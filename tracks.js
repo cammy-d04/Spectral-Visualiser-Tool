@@ -23,11 +23,6 @@ class Track {
 
     this.peaks = [];              // stores tracks peaks
     //optional stuff
-    this.peaks = [];              // latest extracted spectral peaks
-    this.peaksUpdatedAt = 0;      // performance.now() timestamp of last update
-    this._lastPeakTime = 0;       // internal throttle for peak extraction
-    this._bins = null;            // cached FFT bin buffer (Uint8Array)
-
 
     //file loading stuff
     this.fileBuffer = null;      // decoded AudioBuffer
