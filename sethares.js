@@ -1,7 +1,7 @@
-
-
-function startViz2() { 
-  requestAnimationFrame(drawViz2);//begin animation loop
+function startViz2(defaultTrack) {
+  selectedTrack = defaultTrack || vizTracks[0] || null;
+  window.selectedTrack = selectedTrack;
+  requestAnimationFrame(drawViz2);
 }
 
 
@@ -255,8 +255,18 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
 
 
 // Choose which track drives viz2
-// (Set this somewhere sensible after tracks exist)
 let selectedTrack = null;
+
+function setSelectedTrackById(id) {
+  // vizTracks is global from viz.js via setTracks(tracks)
+  selectedTrack = (window.vizTracks || vizTracks).find(t => t.id === id) || null;
+
+  // optional: expose for other files (main.js button, etc.)
+  window.selectedTrack = selectedTrack;
+
+  console.log("Viz2 selectedTrack =", selectedTrack ? selectedTrack.id : null);
+}
+
 
 // Throttle curve computation (curve math is heavier than drawing)
 let lastCurveTime = 0;
@@ -289,6 +299,7 @@ function drawViz2() {
   // Compute curve at limited rate, reuse cached curve for intermediate frames
   const now = performance.now();
   if (!cachedCurve || (now - lastCurveTime) >= CURVE_MS) {
+    console.log("viz2 track", selectedTrack?.id, "peaks", selectedTrack?.peaks?.length,); //debugging
     cachedCurve = buildDissonanceCurve(peaks, {
         maxPeaks: 30,
         centsStep: window.centsStep ?? 10,
@@ -351,6 +362,24 @@ function drawViz2() {
 
     ctx2.fillText(interval.label, x + 2, ys - 6);
   }
+  ctx2.restore();
+
+
+
+    // Slider audition line
+  const cents = window.auditionCents ?? 0;
+  const xLine = centsToXViz2(cents);
+
+  ctx2.save();
+  ctx2.globalAlpha = 0.8;
+  ctx2.strokeStyle = "#000";
+  ctx2.lineWidth = 1;
+
+  ctx2.beginPath();
+  ctx2.moveTo(xLine, ys);
+  ctx2.lineTo(xLine, ys - plotH);
+  ctx2.stroke();
+
   ctx2.restore();
 }
 

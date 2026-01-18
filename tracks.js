@@ -268,6 +268,10 @@ async loadFile() {
 }
 
 
+
+
+
+
 // audition an interval of given size (in cents) from current file buffer (viz2click)
 auditionInterval(cents) {
   if (!this.fileBuffer) return;

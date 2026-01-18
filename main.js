@@ -247,3 +247,29 @@ document.getElementById("centsStep").addEventListener("change", (e) => {
   window.centsStep = Number(e.target.value);
 });
 
+window.auditionCents = 0;
+
+const audSlider = document.getElementById("auditionCents");
+const audVal = document.getElementById("auditionCentsVal");
+audSlider.addEventListener("input", () => {
+  window.auditionCents = Number(audSlider.value);
+  audVal.textContent = String(window.auditionCents);
+});
+
+
+document.getElementById("auditionPlay").addEventListener("click", () => {
+  if (!window.selectedTrack) return;       
+  window.selectedTrack.auditionInterval(window.auditionCents);
+});
+
+
+//track select shit
+const v2sel = document.getElementById("v2trackselect");
+v2sel.addEventListener("change", () => {
+  // call the setter in sethares.js
+  setSelectedTrackById(v2sel.value);
+});
+
+// initialize it so it matches the dropdown’s current value
+setSelectedTrackById(v2sel.value);
+

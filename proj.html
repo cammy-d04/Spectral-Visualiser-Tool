@@ -124,6 +124,9 @@
   #viz2 {
     height: 35vh;
   }
+  #auditionCents {
+  width: 100%;
+}
   
 
   button,
@@ -427,6 +430,17 @@
   <div id="visualisations">
     <canvas id="viz"></canvas>
     <canvas id="viz2"></canvas>
+    <div class="col" style="min-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;">Interval audition</div>
+
+  <label class="small">
+    Cents: <span id="auditionCentsVal">0</span>
+    <input id="auditionCents" type="range" min="0" max="1200" value="0" step="1">
+  </label>
+
+  <button id="auditionPlay">Play / Restart</button>
+</div>
+
   </div>
 
 
