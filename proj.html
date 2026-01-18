@@ -8,13 +8,82 @@
 <style>
   body {
     font-family: system-ui, sans-serif;
-    background: #fff;
-    color: #111;
+    background: #c5a4ff;
+    color: #000000;
     margin: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
+
+  #layout {
+  display: flex;
+  width: 100%;
+  max-width: 1500px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 300px;
+  flex-shrink: 0;
+  background: #8b8b8a;
+  border-right: 4px solid #5f5f5f;
+  border-left: 10px solid #8b8b8a;
+  border-top: 10px solid #8b8b8a;
+  border-bottom: 10px solid #8b8b8a;
+
+   /* scrollable stuff */
+  height: calc(100vh - 80px); /* adjust if header is taller/shorter */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px; /* stops content hiding under scrollbar */
+}
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0; /* stops overflow issues */
+}
+
+#maincontrols {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;          /* wraps nicely on smaller widths */
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px;
+  background: #c7c7c7;
+  border: 1px solid #373737;
+  border-radius: 8px;
+}
+
+#visualisations {
+  flex: 1;
+  min-width: 0;
+}
+
+#vizRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+#tuningPanel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
   h1 {
     font-size: 1.1rem;
@@ -44,14 +113,21 @@
 
   canvas {
     background: #fff;
-    width: 92vw;
+    width: 100%;
     margin: 8px 0;
     border: 1px solid #ccc;
   }
 
   #viz {
-    height: 52vh;
+    height: 35vh;
   }
+  #viz2 {
+    height: 35vh;
+  }
+  #auditionCents {
+  width: 100%;
+}
+  
 
   button,
   input,
@@ -92,9 +168,10 @@
     align-items: stretch;
     gap: 6px;
     min-width: 260px;
-    border: 1px solid #eee;
+    border: 1px solid #373737;
     border-radius: 8px;
     padding: 8px 12px;
+    background: #c7c7c7;
   }
 
   label {
@@ -126,54 +203,19 @@
 </style>
 </head>
 <body>
-
 <h1>Harmonics / Spectra Visualisation</h1>
 
-<div class="row">
-  <!-- Play/stop button and legend (colours match track)-->
-  <button id="start">Start/Stop</button>
-  <span class="chip"><span class="dot a"></span>A (red)</span>
-  <span class="chip"><span class="dot b"></span>B (blue)</span>
-  <span class="chip"><span class="dot c"></span>C (green)</span>
-  <span class="chip"><span class="dot d"></span>D (orange)</span>
-  <span class="chip"><span class="dot e"></span>E (purple)</span>
-  <span class="chip"><span class="dot f"></span>F (gold)</span>
-</div>
-
-
-<!--toggle track on and off, wired to each track as showCheckboxes-->
-<!--control whether audible and drawn-->
-<div class="row" id="visToggles">
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showA" checked> Show A
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showB" checked> Show B
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showC" checked> Show C
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showD" checked> Show D
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showE" checked> Show E
-  </label>
-  <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-    <input type="checkbox" id="showF" checked> Show F
-  </label>
-</div>
-
-</div>
-<!-- tracks A–F  -->
-<div class="row" id="extraTracks">
-<div class="col">
+<div id="layout">
+  <div id="sidebar">
+    <div class="col">
       <label>Engine A:
-      <select id="engineB">
+      <span class="chip"><span class="dot a"></span></span>
+      <select id="engineA">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -182,15 +224,29 @@
       <input id="freqInputA" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValA"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputA" accept="audio/*">
+</label>
+    <label>File Pitch A:
+      <input id="filePitchA" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showA" checked> Show A
+  </label>
+
 </div>
 
   <div class="col">
     <label>Engine B:
+      <span class="chip"><span class="dot b"></span></span>
       <select id="engineB">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -199,15 +255,31 @@
       <input id="freqInputB" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValB"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputB" accept="audio/*">
+</label>
+
+    <label>File Pitch B:
+      <input id="filePitchB" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showB" checked> Show B
+  </label>
+
   </div>
   
   <div class="col">
     <label>Engine C:
+      <span class="chip"><span class="dot c"></span></span>
       <select id="engineC">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
+
       </select>
     </label>
 
@@ -216,15 +288,30 @@
       <input id="freqInputC" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValC"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputC" accept="audio/*">
+</label>
+
+    <label>File Pitch C:
+      <input id="filePitchC" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showC" checked> Show C
+  </label>
   </div>
 
   <div class="col">
     <label>Engine D:
+      <span class="chip"><span class="dot d"></span></span>
       <select id="engineD">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
+
       </select>
     </label>
 
@@ -233,15 +320,29 @@
       <input id="freqInputD" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValD"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputD" accept="audio/*">
+</label>
+    <label>File Pitch D:
+      <input id="filePitchD" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showD" checked> Show D
+  </label>
+
   </div>
 
   <div class="col">
     <label>Engine E:
+      <span class="chip"><span class="dot e"></span></span>
       <select id="engineE">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -250,15 +351,29 @@
       <input id="freqInputE" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValE"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputE" accept="audio/*">
+</label>
+    <label>File Pitch E:
+      <input id="filePitchE" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showE" checked> Show E
+  </label>
+
   </div>
 
   <div class="col">
     <label>Engine F:
+      <span class="chip"><span class="dot f"></span></span>
       <select id="engineF">
         <option value="sinOsc">Sine oscillator</option>
         <option value="triangleOsc">Triangle oscillator</option>
         <option value="squareOsc">Square oscillator</option>
         <option value="add">String (additive)</option>
+        <option value="file">Audio file</option>
       </select>
     </label>
 
@@ -267,16 +382,147 @@
       <input id="freqInputF" type="number" min="50" max="2000" step="1" style="width:70px">
       <span id="freqValF"></span>
     </label>
+
+    <label>Load file:
+  <input type="file" id="fileInputF" accept="audio/*">
+</label>
+    <label>File Pitch F:
+      <input id="filePitchF" type="range" min="0.25" max="4" value="1" step="0.01">
+    </label>
+
+
+      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
+    <input type="checkbox" id="showF" checked> Show F
+  </label>
+
   </div>
+  </div>
+
+
+
+
+<div id="main">
+  <div id="maincontrols">
+    <button id="start">Start/Stop</button>
+    <button id="pauseViz">Pause</button>
+    <button id="masterLoop">Toggle Master Loop</button>
+
+    <label>
+      Loop interval (seconds):
+      <input id="loopInterval" type="number" value="2" min="0.1" step="0.1">
+    </label>
+
+    <label>
+      X-Zoom:
+      <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
+    </label>
+  </div>
+
+
+
+
+
+
+
+
+
+<div id="vizRow">
+  <div id="visualisations">
+    <canvas id="viz"></canvas>
+    <canvas id="viz2"></canvas>
+    <div class="col" style="min-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;">Interval audition</div>
+
+  <label class="small">
+    Cents: <span id="auditionCentsVal">0</span>
+    <input id="auditionCents" type="range" min="0" max="1200" value="0" step="1">
+  </label>
+
+  <button id="auditionPlay">Play / Restart</button>
+</div>
+
+  </div>
+
+
+
+
+
+
+
+
+<div id="tuningPanel">
+  <div class="col" style="min-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;">Peak picker</div>
+
+  <label class="small">
+    Threshold (fraction of max bin): <span id="threshFracVal">0.20</span>
+    <input id="threshFrac" type="range" min="0.05" max="0.60" value="0.20" step="0.01">
+  </label>
+
+  <label class="small">
+    Max peaks picked: <span id="maxPeaksVal">20</span>
+    <input id="maxPeaksPicked" type="range" min="4" max="60" value="20" step="1">
+  </label>
+
+  <label class="small">
+    Min separation (Hz): <span id="minSepHzVal">30</span>
+    <input id="minSepHz" type="range" min="5" max="120" value="30" step="1">
+  </label>
+
+  <label class="small">
+    Peak fMin (Hz): <span id="peakFMinVal">60</span>
+    <input id="peakFMin" type="range" min="20" max="400" value="60" step="1">
+  </label>
+</div>
+
+<div class="col" style="min-width:320px;">
+  <div style="font-weight:600;margin-bottom:6px;">Dissonance curve</div>
+
+  <label class="small">
+    Amp compress: <span id="ampCompressVal">0.50</span>
+    <input id="ampCompress" type="range" min="0.20" max="1.00" value="0.50" step="0.01">
+  </label>
+
+  <label class="small">
+    Cents step:
+    <select id="centsStep">
+      <option value="1">1</option>
+      <option value="5">5</option>
+      <option value="10" selected>10</option>
+      <option value="20">20</option>
+      <option value="25">25</option>
+    </select>
+  </label>
+
+    <label class="small">
+    Viz2 track:
+    <select id="v2trackselect">
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+      <option value="E">E</option>
+      <option value="F">F</option>
+    </select>
+  </label>
+</div>
+</div>
+</div>
+
 </div>
 
 
-<!-- Canvas 1: frequency-domain spectra (overlaid) -->
-<canvas id="viz"></canvas>
+
+
+
+
+
 
 <script src="audio-engines.js"></script>
 <script src="tracks.js"></script>
+<script src="static-spectrum.js"></script>
 <script src="viz.js"></script>
+<script src="sethares.js"></script>
 <script src="main.js"></script>
 
 </body>
