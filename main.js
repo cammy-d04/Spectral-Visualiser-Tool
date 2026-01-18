@@ -7,6 +7,9 @@ window.maxPeaksPicked = 20;
 window.minSepHz = 30;
 window.peakFMin = 60;
 
+window.spectrumMode = "static"; // or "static"
+
+
 window.ampCompress = 0.50;
 window.centsStep = 10;
 

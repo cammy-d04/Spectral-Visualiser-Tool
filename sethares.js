@@ -6,6 +6,7 @@ function startViz2() {
 
 
 
+
 // Sethares / Plomp–Levelt sensory dissonance kernel
 // f1, f2 in Hz
 // returns a non-negative roughness contribution (dimensionless)
@@ -157,22 +158,51 @@ function buildDissonanceCurve(peaks, opts = {}) {
 // Canvas for viz2 (make sure your HTML has <canvas id="viz2"></canvas>)
 const canvas2 = document.getElementById('viz2');
 const ctx2 = canvas2.getContext('2d');
+const MARGIN2_LEFT = 50, MARGIN2_BOTTOM = 30;
 
 function resizeViz2() {
   canvas2.width = canvas2.clientWidth;
   canvas2.height = canvas2.clientHeight;
 }
 
-
 window.addEventListener('resize', resizeViz2);
 resizeViz2();
 
-const MARGIN2_LEFT = 50, MARGIN2_BOTTOM = 30;
+// Geometry helpers for viz2
+function viz2PlotGeom() {
+  const w = canvas2.width;
+  const h = canvas2.height;
 
-function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
-  const w = canvas2.width, h = canvas2.height;
   const xs = MARGIN2_LEFT;
   const ys = h - MARGIN2_BOTTOM;
+
+  const plotW = (w - xs - 10);
+  const plotH = (h - MARGIN2_BOTTOM - 10);
+
+  return { w, h, xs, ys, plotW, plotH };
+}
+
+
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function xToCentsViz2(xCanvas) {
+  const { xs, plotW } = viz2PlotGeom();
+  const frac = (xCanvas - xs) / plotW;   
+  return clamp(frac, 0, 1) * 1200;     
+}
+
+function centsToXViz2(cents) {
+  const { xs, plotW } = viz2PlotGeom();
+  return xs + (clamp(cents, 0, 1200) / 1200) * plotW;
+}
+
+
+
+
+function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
+  const { w, h, xs, ys, plotW, plotH } = viz2PlotGeom();
 
   ctx2.strokeStyle = '#888';
   ctx2.lineWidth = 1;
@@ -188,7 +218,8 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
   for (let i = 0; i <= ticksX; i++) {
     const frac = i / ticksX;
     const cents = frac * xMaxCents;
-    const x = xs + frac * (w - xs - 10);
+    const x = xs + frac * plotW;
+
 
     ctx2.beginPath();
     ctx2.moveTo(x, ys);
@@ -204,7 +235,7 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
   const ticksY = 5;
   for (let j = 0; j <= ticksY; j++) {
     const frac = j / ticksY;
-    const y = ys - frac * (ys - 8);
+    const y = ys - frac * (plotH - 2);
     const v = frac * yMax;
 
     ctx2.beginPath();
@@ -270,11 +301,7 @@ function drawViz2() {
   const curve = cachedCurve;
   if (!curve || curve.cents.length === 0) return;
 
-  // Plot line
-  const xs = MARGIN2_LEFT; // leaves room for labels
-  const ys = h - MARGIN2_BOTTOM; 
-  const plotW = (w - xs - 10); //width of usable plotting area
-  const plotH = (h - MARGIN2_BOTTOM - 10); //right padding so strokes dont clip
+  const { xs, ys, plotW, plotH } = viz2PlotGeom();
 
   ctx2.globalAlpha = 0.9; //transparency
   ctx2.strokeStyle = selectedTrack.color || '#000';
@@ -285,7 +312,7 @@ function drawViz2() {
     const c = curve.cents[i];      // 0..1200
     const v = curve.values[i];     // 0..1
 
-    const x = xs + (c / 1200) * plotW;
+    const x = centsToXViz2(c);
     const y = ys - v * plotH;
 
     if (i === 0) ctx2.moveTo(x, y);
@@ -313,7 +340,7 @@ function drawViz2() {
   ctx2.font = "10px sans-serif";
 
   for (const interval of INTERVAL_LINES) {
-    const x = xs + (interval.cents / 1200) * plotW;
+    const x = centsToXViz2(interval.cents);
 
     // vertical line
     ctx2.beginPath();

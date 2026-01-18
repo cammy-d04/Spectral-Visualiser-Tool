@@ -150,8 +150,16 @@ function draw() {
 
     // fill bins with sound data (energy per bin) from analyser
     ensureTrackVizBuffers(track);
-    track.analyser.getByteFrequencyData(track._bins);
-    const bins = track._bins;
+
+let bins;
+if (window.spectrumMode === "static" && track.staticBins) {
+  // feed the static bins into the existing pipeline
+  track._bins.set(track.staticBins);
+  bins = track._bins;
+} else {
+  track.analyser.getByteFrequencyData(track._bins);
+  bins = track._bins;
+}
 
 
 
