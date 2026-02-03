@@ -14,18 +14,18 @@ function setharesKernel(f1, f2) {
   const df = Math.abs(f1 - f2);
   if (df === 0) return 0;
 
-  // Critical bandwidth empirical approximation (Sethares)
   const minF = Math.min(f1, f2);
-  const cbw = 1.72 * Math.pow(minF, 0.65);
 
-  const x = df / cbw;
+  // Equivalent Rectangular Bandwidth (ERB) approximation
+  const erb = 24.7 * (4.37e-3 * minF + 1);
 
-  // Difference-of-exponentials roughness curve
+  const x = df / erb;
+
   const a = 3.5;
   const b = 5.75;
-
   return Math.exp(-a * x) - Math.exp(-b * x);
 }
+
 
 // Compute Sethares sensory dissonance between two peak sets
 // peaksA, peaksB: arrays of { f: frequencyHz, a: amplitude }
@@ -334,7 +334,16 @@ function drawViz2() {
 
 
 
-  const INTERVAL_LINES = [ // intervals to be overlayed in cents with labels
+  // const INTERVAL_LINES = [ // intervals to be overlayed in cents with labels
+  //   { cents: 0,    label: "1/1" },
+  //   { cents: 316,  label: "6/5" },
+  //   { cents: 386,  label: "5/4" },
+  //   { cents: 500,  label: "4/3" },
+  //   { cents: 700,  label: "3/2" },
+  //   { cents: 1200, label: "2/1" },
+  // ];
+  
+    const INTERVAL_LINES = [ // intervals to be overlayed in cents with labels
     { cents: 0,    label: "1/1" },
     { cents: 316,  label: "6/5" },
     { cents: 386,  label: "5/4" },

@@ -11,15 +11,6 @@ class Track {
     this.freqLabel    = document.getElementById(opts.freqLabelId); // frequency label
     this.showCheckbox = document.getElementById(opts.showCheckboxId); // show/hide checkbox
 
-    // Optional params (for additive synthesis)
-    this.BSlider      = opts.BSliderId      ? document.getElementById(opts.BSliderId)      : null;
-    this.BLabel       = opts.BLabelId       ? document.getElementById(opts.BLabelId)       : null;
-    this.posSlider    = opts.posSliderId    ? document.getElementById(opts.posSliderId)    : null;
-    this.posLabel     = opts.posLabelId     ? document.getElementById(opts.posLabelId)     : null;
-    this.decaySlider  = opts.decaySliderId  ? document.getElementById(opts.decaySliderId)  : null;
-    this.decayLabel   = opts.decayLabelId   ? document.getElementById(opts.decayLabelId)   : null;
-    this.brightSlider = opts.brightSliderId ? document.getElementById(opts.brightSliderId) : null;
-    this.brightLabel  = opts.brightLabelId  ? document.getElementById(opts.brightLabelId)  : null;
 
     this.peaks = [];              // stores tracks peaks
     //optional stuff

@@ -19,7 +19,7 @@ function startViz() {
 // 2048 point FFT gives 11hz bins at 44100hz sample rate
 function makeAnalyser(){
   const analyser = audioCtx.createAnalyser();// analyser reads audio data from track
-  analyser.fftSize = 2048;
+  analyser.fftSize = 16384;
   return analyser;
 }
 
@@ -270,7 +270,7 @@ if (window.spectrumMode === "static" && track.staticBins) {
       ctx.fill();
 
       // label slightly above
-      ctx.fillText(`${Math.round(fHz)}Hz`, x + 4, y - 6);
+      ctx.fillText(`${Math.round(fHz)}Hz`, x + 4, y + 12);
 }
 
 
