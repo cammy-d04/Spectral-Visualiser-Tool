@@ -21,7 +21,6 @@ tracks = [
   new Track({
     id: 'A',
     color: 'red',
-    engineSelectId: 'engineA',
     freqSliderId: 'freqSliderA',
     freqInputId: 'freqInputA',
     freqLabelId: 'freqValA',
@@ -30,7 +29,6 @@ tracks = [
   new Track({
     id: 'B',
     color: 'green',
-    engineSelectId: 'engineB',
     freqSliderId: 'freqSliderB',
     freqInputId: 'freqInputB',
     freqLabelId: 'freqValB',
@@ -39,7 +37,6 @@ tracks = [
   new Track({
     id: 'C',
     color: 'seagreen',
-    engineSelectId: 'engineC',
     freqSliderId: 'freqSliderC',
     freqInputId: 'freqInputC',
     freqLabelId: 'freqValC',
@@ -48,7 +45,6 @@ tracks = [
   new Track({
     id: 'D',
     color: 'orange',
-    engineSelectId: 'engineD',
     freqSliderId: 'freqSliderD',
     freqInputId: 'freqInputD',
     freqLabelId: 'freqValD',
@@ -57,7 +53,6 @@ tracks = [
   new Track({
     id: 'E',
     color: 'purple',
-    engineSelectId: 'engineE',
     freqSliderId: 'freqSliderE',
     freqInputId: 'freqInputE',
     freqLabelId: 'freqValE',
@@ -66,7 +61,6 @@ tracks = [
   new Track({
     id: 'F',
     color: 'goldenrod',
-    engineSelectId: 'engineF',
     freqSliderId: 'freqSliderF',
     freqInputId: 'freqInputF',
     freqLabelId: 'freqValF',
