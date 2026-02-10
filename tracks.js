@@ -17,19 +17,26 @@ class Track {
     this.fileInput.addEventListener("change", () => this.loadFile());
     this.pitchSlider = document.getElementById("filePitch" + this.id);
 
+
     this.pitchSlider.addEventListener("input", () => {
-  if (this.engine === "file" && this.voice && this.voice.src) {
     const r = parseFloat(this.pitchSlider.value);
-    this.voice.src.playbackRate.setValueAtTime(r, audioCtx.currentTime);
-  }
-});
+
+    // live-update the currently playing loop
+    if (this.fileSource) {
+      this.fileSource.playbackRate.setValueAtTime(r, window.audioCtx.currentTime);
+    }
+    });
+
+    this.show = this.showCheckbox ? this.showCheckbox.checked : true;
+    this.analyser = makeAnalyser();
+    this.gain = window.audioCtx.createGain();
+    this.gain.gain.value = this.show ? 1 : 0;
 
 
-    // audio nodes
-    this.analyser = null; // analyser node
-    this.gain     = null; // gain node
-    this.voice    = null; // synthesis voice
-    this.show     = true; // visible by default
+    // permanent wiring
+    this.analyser.connect(this.gain);
+    this.gain.connect(window.audioCtx.destination);
+    
 
     this._wireUI();
   }
@@ -46,82 +53,38 @@ class Track {
     }
   }
 
+buildAudioGraph() {
 
+  if (!this.fileBuffer) return;
 
-
-
-  buildAudioGraph() {
-  console.log(`buildAudioGraph(${this.id}) engine=${this.engine}`);
-
-  if (!window.audioCtx || !window.makeAnalyser) return;
-
-  // file-only, permanently
-  this.engine = "file";
-
-  // stop old nodes
   if (this.fileSource) {
-    try { this.fileSource.stop(); } catch (e) {}
-    try { this.fileSource.disconnect(); } catch (e) {}
-  }
-  this.fileSource = null;
-
-  if (this.analyser) try { this.analyser.disconnect(); } catch (e) {}
-  if (this.gain)     try { this.gain.disconnect(); } catch (e) {}
-
-  // rebuild analyser + gain
-  this.analyser = makeAnalyser();
-  this.gain = audioCtx.createGain();
-  this.gain.gain.value = this.show ? 1 : 0;
-
-  // If no file loaded yet, still connect gain so the graph is valid
-  this.gain.connect(audioCtx.destination);
-
-  if (!this.fileBuffer) {
-    console.log(`Track ${this.id}: NO FILE LOADED (graph built anyway)`);
-    return;
+    try { this.fileSource.stop(); } catch(e){}
+    try { this.fileSource.disconnect(); } catch(e){}
   }
 
-  // Build looping file source routed through analyser/gain
-  const src = audioCtx.createBufferSource();
+  const src = window.audioCtx.createBufferSource();
   src.buffer = this.fileBuffer;
   src.loop = true;
 
   src.playbackRate.setValueAtTime(
     parseFloat(this.pitchSlider.value),
-    audioCtx.currentTime
+    window.audioCtx.currentTime
   );
 
   src.connect(this.analyser);
-  this.analyser.connect(this.gain);
 
   this.fileSource = src;
-
-  console.log(`Track ${this.id}: fileSource ready`);
 }
-
-
 
 
 start() {
-  // File-only: start looping buffer if it exists
-  if (this.engine !== "file") return;
+  if (!this.fileSource && this.fileBuffer) this.buildAudioGraph();
+  if (!this.fileSource) return;
 
-  // If graph not built yet, build it
-  if (!this.analyser || !this.gain) {
-    this.buildAudioGraph();
-  }
-
-  if (!this.fileSource) {
-    // No file loaded yet, nothing to start
-    return;
-  }
-
-  try {
-    this.fileSource.start();
-  } catch (e) {
-    // This will throw if already started; ignore
-  }
+  try { this.fileSource.start(); } catch (e) {}
 }
+
+
 
 
 stop() {
@@ -134,12 +97,13 @@ stop() {
 
 
 
+
 async loadFile() {
   const file = this.fileInput.files[0];
   if (!file) return;
 
   const arrayBuf = await file.arrayBuffer();
-  this.fileBuffer = await audioCtx.decodeAudioData(arrayBuf);
+  this.fileBuffer = await window.audioCtx.decodeAudioData(arrayBuf);
 
   console.log("Loaded file for track", this.id);
 
@@ -174,17 +138,17 @@ auditionInterval(cents) {
   if (!this.fileBuffer) return;
 
   // Make sure audio can start (in case click happens before Start button)
-  if (audioCtx.state !== "running") audioCtx.resume();
+  if (window.audioCtx.state !== "running") audioCtx.resume();
 
   // --- Stop any currently playing audition pair ---
   this.stopAudition();
 
-  const when = audioCtx.currentTime; // immediate
+  const when = window.audioCtx.currentTime; // immediate
   const ratio = Math.pow(2, cents / 1200);
 
   // Helper to create + start one source at a given playbackRate
   const makeSrc = (rate) => {
-    const src = audioCtx.createBufferSource();
+    const src = window.audioCtx.createBufferSource();
     src.buffer = this.fileBuffer;
     src.loop = false;
     src.playbackRate.setValueAtTime(rate, when);
@@ -192,7 +156,7 @@ auditionInterval(cents) {
     // Route: straight to speakers (cleanest for "audition")
     // If you want it to show up in viz1/viz2, route via analyser/gain instead:
     // src.connect(this.analyser).connect(this.gain);
-    src.connect(audioCtx.destination);
+    src.connect(window.audioCtx.destination);
 
     // Clean up when it ends
     src.onended = () => {
@@ -226,7 +190,5 @@ stopAudition() {
 
   this._auditionSources = null;
 }
-
-
 
 }

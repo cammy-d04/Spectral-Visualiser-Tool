@@ -18,7 +18,7 @@ function startViz() {
 //create analyser with consistent FFT size across all tracks
 // 2048 point FFT gives 11hz bins at 44100hz sample rate
 function makeAnalyser(){
-  const analyser = window.audioCtx.createAnalyser();// analyser reads audio data from track
+  const analyser = audioCtx.createAnalyser();// analyser reads audio data from track
   analyser.fftSize = 16384;
   return analyser;
 }
@@ -108,7 +108,7 @@ function ensureTrackVizBuffers(track) {
   }
 
   // Optional: cache bin->Hz scale
-  track._binHz = window.audioCtx.sampleRate / track.analyser.fftSize;
+  track._binHz = audioCtx.sampleRate / track.analyser.fftSize;
 }
 
 
@@ -123,15 +123,13 @@ function draw() {
   if (pausedViz) return;
   // only draw if we have at least one analyser running
   const activeTracks = vizTracks.filter(t => t.analyser);
-  console.log("activetracks = ", activeTracks);
   if (activeTracks.length === 0) return;
-  
 
   requestAnimationFrame(draw); // Schedule next frame
 
   const w = canvas.width;
   const h = canvas.height;
-  const nyquist = window.audioCtx.sampleRate / 2;
+  const nyquist = audioCtx.sampleRate / 2;
   const maxAmp = 1.0;
 
    // height of plotting area
@@ -177,7 +175,7 @@ if (window.spectrumMode === "static" && track.staticBins) {
     }
     //parameters wired to controls
     const THRESH = (window.threshFrac ?? 0.2) * maxBin;
-    const binHz = window.audioCtx.sampleRate / track.analyser.fftSize;
+    const binHz = audioCtx.sampleRate / track.analyser.fftSize;
     const MIN_SEP_BINS = Math.max(1, Math.round((window.minSepHz ?? 30) / binHz));
     const MIN_BIN = Math.max(2, Math.round((window.peakFMin ?? 60) / binHz));
     const peaks = [];
@@ -264,7 +262,7 @@ if (window.spectrumMode === "static" && track.staticBins) {
       const y = (h - MARGIN_BOTTOM) - v * plotH;
 
       // convert bin index to frequency 
-      const fHz = i * (window.audioCtx.sampleRate / track.analyser.fftSize);
+      const fHz = i * (audioCtx.sampleRate / track.analyser.fftSize);
 
       // small dot marker
       ctx.beginPath();
@@ -275,7 +273,44 @@ if (window.spectrumMode === "static" && track.staticBins) {
       ctx.fillText(`${Math.round(fHz)}Hz`, x + 4, y + 12);
 }
 
+    // --- Interval audition overlay: show where THIS track's peaks would move when pitching by auditionCents ---
+    // This is purely a visual transform (frequency * ratio), not a real-time STFT of the pitch-shifted audio.
+    if (track === window.selectedTrack && (window.auditionCents ?? 0) !== 0 && Array.isArray(track.peaks)) {
+      const ratio = Math.pow(2, (window.auditionCents ?? 0) / 1200);
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#2b7cff";
+      ctx.strokeStyle = "#2b7cff";
 
+      for (const pk of track.peaks) {
+        const fShift = pk.f * ratio;
+        const iShift = Math.round(fShift / binHz);
+        if (iShift < 0 || iShift >= bufLen) continue;
+
+        const fracS = iShift / bufLen;
+        let zoomedFracS = fracS * xZoom;
+        if (zoomedFracS > 1) zoomedFracS = 1;
+
+        const xS = MARGIN_LEFT + zoomedFracS * (w - MARGIN_LEFT - 10);
+
+        // Use original peak's magnitude for vertical placement so it "slides" horizontally.
+        const vS = bins[Math.max(0, Math.min(bufLen - 1, pk.bin))] / 255;
+        const yS = (h - MARGIN_BOTTOM) - vS * plotH;
+
+        // marker + small guide line
+        ctx.beginPath();
+        ctx.moveTo(xS, h - MARGIN_BOTTOM);
+        ctx.lineTo(xS, yS);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(xS, yS, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
 
 
   });

@@ -1,19 +1,31 @@
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-window.audioCtx = audioCtx;
 
-//globals
+
+
+//global audio context
+window.audioCtx = new AudioContext(); 
+
+
+
+//make analyser
+window.makeAnalyser = function makeAnalyser() { 
+  const analyser = window.audioCtx.createAnalyser();
+  analyser.fftSize = 16384; //change for more smoothe curve (costs CPU)
+  analyser.smoothingTimeConstant = 0.0;
+  return analyser;
+};
+
+
+//globals for ui controls
 window.threshFrac = 0.20;
 window.maxPeaksPicked = 20;
 window.minSepHz = 30;
 window.peakFMin = 60;
-
 window.spectrumMode = "static"; // or "static"
-
-
 window.ampCompress = 0.50;
 window.centsStep = 10;
 
-// Multi-track container
+
+// Array of tracks
 let tracks = [];
 
 // Create Track instances
@@ -68,70 +80,28 @@ tracks = [
   })
 ];
 
+let xZoom = 1;
+
+//send tracks to visualisation system
 setTracks(tracks); 
-startViz2(tracks[0]);
- 
+startViz2(tracks[0]); //start viz2 (dissonance curve) with first track
 
 
 
-let masterLoopTimer = null;
-
-function triggerFileTracks() {
-  const dur = getShortestFileDuration();
-  if (dur == null) {
-    console.log("No file buffers loaded");
-    return;
-  }
+async function start() {
+  await window.audioCtx.resume();
 
   vizTracks.forEach(t => {
-    if (t.engine === "file" && t.fileBuffer) {
-
-      // rebuild a fresh AudioBufferSourceNode
-      t.buildAudioGraph();
-
-      if (t.fileSource) {
-        // start playback
-        t.fileSource.start(0);
-
-        // stop playback after shortest duration
-        t.fileSource.stop(audioCtx.currentTime + dur);
-      }
-    }
+    t.buildAudioGraph(); // makes fileSource if buffer exists
+    t.start();           // starts it (loops because src.loop = true)
   });
-}
 
-
-
-// =====================
-// start/stop graph wiring
-// =====================
-function start() {
-  audioCtx.resume();
-  vizTracks.forEach(t => {
-    t.buildAudioGraph();
-    t.start();              
-  });
   draw();
 }
-
 
 function stop() {
   vizTracks.forEach(t => t.stop());
 }
-
-
-function getShortestFileDuration() {
-  const durations = vizTracks
-    .filter(t => t.fileBuffer)
-    .map(t => t.fileBuffer.duration);
-
-  if (durations.length === 0) return null;
-
-  return Math.min(...durations);
-}
-
-
-
 
 
 
@@ -151,7 +121,7 @@ document.getElementById('start').addEventListener('click', () => {
 
   console.log("anyRunning =", anyRunning);
 
-  audioCtx.resume();
+  window.audioCtx.resume();
 
   if (!anyRunning) {
     console.log("-> calling start()");
@@ -162,24 +132,7 @@ document.getElementById('start').addEventListener('click', () => {
   }
 });
 
-document.getElementById("masterLoop").addEventListener("click", () => {
-  if (masterLoopTimer) {
-    clearInterval(masterLoopTimer);
-    masterLoopTimer = null;
-    console.log("Master loop disabled");
-    return;
-  }
 
-  const secs = parseFloat(document.getElementById("loopInterval").value) || 2;
-  const ms = secs * 1000;
-
-  masterLoopTimer = setInterval(triggerFileTracks, ms);
-
-  console.log("Master loop enabled, period =", secs, "s");
-});
-
-
-let xZoom = 1;
 
 document.getElementById("xZoom").addEventListener("input", e => {
   xZoom = parseFloat(e.target.value);
