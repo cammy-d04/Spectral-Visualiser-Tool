@@ -1,9 +1,13 @@
-function startViz2(defaultTrack) {
-  selectedTrack = defaultTrack || vizTracks[0] || null;
-  window.selectedTrack = selectedTrack;
+// sethares visualisation code
+// takes chosen tracks peaks
+//take shifted peaks
+// apply sethares kernel to each pair of partials
+//
+
+
+function startViz2() {
   requestAnimationFrame(drawViz2);
 }
-
 
 
 
@@ -71,7 +75,7 @@ function setharesDissonance(peaksA, peaksB) {
 //   maxPeaks (default 30)      // cap strongest peaks for speed
 //   normalizeCurve (default true) // scale y to [0,1] for plotting
 //   ampCompress (default 0.5)  // 1.0 none, 0.5 sqrt, etc.
-function buildDissonanceCurve(peaks, opts = {}) {
+function buildDissonanceCurve(peaks1, peaks2, opts = {}) {
   const {
     centsMin = 0,
     centsMax = 1200,
@@ -81,27 +85,44 @@ function buildDissonanceCurve(peaks, opts = {}) {
     ampCompress = 0.5,
   } = opts;
 
-  if (!peaks || peaks.length < 1) {
+  if (!peaks1 || peaks1.length < 1 || !peaks2 || peaks2.length < 1) {
     return { cents: [], values: [], rawMin: 0, rawMax: 0 };
   }
 
   // --- 1) Clean + cap peaks (top by amplitude) ---
-  const cleaned = peaks
+  const cleaned1 = peaks1
     .filter(p => p && isFinite(p.f) && isFinite(p.a) && p.f > 0 && p.a > 0)
     .sort((p1, p2) => p2.a - p1.a)
     .slice(0, maxPeaks);
 
-  if (cleaned.length < 1) {
+  const cleaned2 = peaks2
+    .filter(p => p && isFinite(p.f) && isFinite(p.a) && p.f > 0 && p.a > 0)
+    .sort((p1, p2) => p2.a - p1.a)
+    .slice(0, maxPeaks);
+
+  if (cleaned1.length < 1 || cleaned2.length < 1) {
     return { cents: [], values: [], rawMin: 0, rawMax: 0 };
   }
 
   // --- 2) Normalize amplitudes (and optionally compress) ---
-  let aMax = 0;
-  for (const p of cleaned) aMax = Math.max(aMax, p.a);
-  if (aMax <= 0) aMax = 1;
+  let aMax1 = 0;
+  for (const p of cleaned1) aMax1 = Math.max(aMax1, p.a);
+  if (aMax1 <= 0) aMax1 = 1;
 
-  const base = cleaned.map(p => {
-    let a = p.a / aMax;
+  // --- 2) Normalize amplitudes (and optionally compress) ---
+  let aMax2 = 0;
+  for (const p of cleaned2) aMax2 = Math.max(aMax2, p.a);
+  if (aMax2 <= 0) aMax2 = 1;
+
+
+  const base1 = cleaned1.map(p => {
+    let a = p.a / aMax1;
+    if (ampCompress !== 1.0) a = Math.pow(a, ampCompress);
+    return { f: p.f, a };
+  });
+
+  const base2 = cleaned2.map(p => {
+    let a = p.a / aMax2;
     if (ampCompress !== 1.0) a = Math.pow(a, ampCompress);
     return { f: p.f, a };
   });
@@ -117,9 +138,9 @@ function buildDissonanceCurve(peaks, opts = {}) {
     const ratio = Math.pow(2, c / 1200);
 
     // Shift copy (frequency scaled, amplitudes unchanged)
-    const shifted = base.map(p => ({ f: p.f * ratio, a: p.a }));
+    const shifted = base2.map(p => ({ f: p.f * ratio, a: p.a }));
 
-    const D = setharesDissonance(base, shifted);
+    const D = setharesDissonance(base1, shifted);
 
     cents.push(c);
     values.push(D);
@@ -251,23 +272,6 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
 
 
 
-
-
-
-// Choose which track drives viz2
-let selectedTrack = null;
-
-function setSelectedTrackById(id) {
-  // vizTracks is global from viz.js via setTracks(tracks)
-  selectedTrack = (window.vizTracks || vizTracks).find(t => t.id === id) || null;
-
-  // optional: expose for other files (main.js button, etc.)
-  window.selectedTrack = selectedTrack;
-
-  console.log("Viz2 selectedTrack =", selectedTrack ? selectedTrack.id : null);
-}
-
-
 // Throttle curve computation (curve math is heavier than drawing)
 let lastCurveTime = 0;
 let cachedCurve = null;
@@ -292,15 +296,13 @@ function drawViz2() {
   // Axes: x=0..1200 cents, y=0..1 (because buildDissonanceCurve normalizes)
   drawAxesViz2(1200, 1.0);
 
-  if (!selectedTrack) return;
-
-  const peaks = selectedTrack.peaks;
+  const peaks1 = window.buses.context.peaks;
+  const peaks2 = window.buses.complement.peaks;
 
   // Compute curve at limited rate, reuse cached curve for intermediate frames
   const now = performance.now();
   if (!cachedCurve || (now - lastCurveTime) >= CURVE_MS) {
-    console.log("viz2 track", selectedTrack?.id, "peaks", selectedTrack?.peaks?.length,); //debugging
-    cachedCurve = buildDissonanceCurve(peaks, {
+    cachedCurve = buildDissonanceCurve(peaks1, peaks2, {
         maxPeaks: 30,
         centsStep: window.centsStep ?? 10,
         normalizeCurve: true,
@@ -315,7 +317,7 @@ function drawViz2() {
   const { xs, ys, plotW, plotH } = viz2PlotGeom();
 
   ctx2.globalAlpha = 0.9; //transparency
-  ctx2.strokeStyle = selectedTrack.color || '#000';
+  ctx2.strokeStyle = '#6456fe';
   ctx2.lineWidth = 2; //thickness
   ctx2.beginPath();
 
@@ -392,8 +394,3 @@ function drawViz2() {
   ctx2.restore();
 }
 
-// Call this once after tracks exist, e.g. in main.js after setTracks(tracks)
-function startViz2(defaultTrack) {
-  selectedTrack = defaultTrack || vizTracks[0] || null;
-  requestAnimationFrame(drawViz2);
-}

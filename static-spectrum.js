@@ -2,9 +2,8 @@
 // Whole-file static spectrum (Welch average) with Blackman–Harris window.
 // Outputs Uint8Array bins (0..255) length = fftSize/2 to mimic getByteFrequencyData().
 //
-// Usage:
-//   const bins = await StaticSpectrum.compute(audioBuffer, { fftSize: 2048, hopSize: 1024 });
-//   track.staticBins = bins;
+// given an audio buffer, computes a single spectrum representing the whole file.
+//
 
 (function () {
   "use strict";

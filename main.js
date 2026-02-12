@@ -1,4 +1,9 @@
-
+//creates global audioctx
+//defines makeAnalyser global function to create analysers with consistent configuration
+// instantiates track objects, giving them their IDs, colours, etc.
+//hooks up UI to the code. (start stop, pause viz, threshold/max peaks/ mmin sep/etc)
+//calls entry points for viz and viz2 setTracks(tracks) -> (startViz() and startViz2())
+//bridge between DOM and audio/viz logic
 
 
 //global audio context
@@ -14,6 +19,11 @@ window.makeAnalyser = function makeAnalyser() {
   return analyser;
 };
 
+//create group bus instances (compliment/context)
+window.buses = {
+  context: new window.GroupBus({ id: "context", color: "red" }),
+  complement: new window.GroupBus({ id: "complement", color: "dodgerblue" })
+};
 
 //globals for ui controls
 window.threshFrac = 0.20;
@@ -83,15 +93,16 @@ tracks = [
 let xZoom = 1;
 
 //send tracks to visualisation system
-setTracks(tracks); 
-startViz2(tracks[0]); //start viz2 (dissonance curve) with first track
+setTracks([window.buses.context, window.buses.complement]); 
+startViz2(); //start viz2 (dissonance curve) with first track
+
 
 
 
 async function start() {
   await window.audioCtx.resume();
 
-  vizTracks.forEach(t => {
+  tracks.forEach(t => {
     t.buildAudioGraph(); // makes fileSource if buffer exists
     t.start();           // starts it (loops because src.loop = true)
   });
@@ -100,9 +111,8 @@ async function start() {
 }
 
 function stop() {
-  vizTracks.forEach(t => t.stop());
+  tracks.forEach(t => t.stop());
 }
-
 
 
 
@@ -114,7 +124,7 @@ document.getElementById('start').addEventListener('click', () => {
 
   console.log("=== START BUTTON CLICKED ===");
 
-  const anyRunning = vizTracks.some(t => {
+  const anyRunning = tracks.some(t => {
     console.log(`Track ${t.id}: voice=${!!t.voice}, fileSource=${!!t.fileSource}`);
     return (t.voice || t.fileSource);
   });

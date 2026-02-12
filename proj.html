@@ -8,7 +8,7 @@
 <style>
   body {
     font-family: system-ui, sans-serif;
-    background: #c5a4ff;
+    background: #fcc06c;
     color: #000000;
     margin: 0;
     display: flex;
@@ -227,9 +227,15 @@
         <input id="filePitchA" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-        <input type="checkbox" id="showA" checked> Show A
-      </label>
+    <label class="small">
+      Group:
+      <select id="showA">
+        <option value="off" selected>Off</option>
+        <option value="context">Context</option>
+        <option value="complement">Complement</option>
+      </select>
+    </label>
+
     </div>
 
 
@@ -247,9 +253,14 @@
         <input id="filePitchB" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-        <input type="checkbox" id="showB" checked> Show B
-      </label>
+    <label class="small">
+      Group:
+      <select id="showB">
+        <option value="off" selected>Off</option>
+        <option value="context">Context</option>
+        <option value="complement">Complement</option>
+      </select>
+    </label>
     </div>
 
 
@@ -267,9 +278,14 @@
         <input id="filePitchC" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-        <input type="checkbox" id="showC" checked> Show C
-      </label>
+    <label class="small">
+      Group:
+      <select id="showC">
+        <option value="off" selected>Off</option>
+        <option value="context">Context</option>
+        <option value="complement">Complement</option>
+      </select>
+    </label>
     </div>
 
 
@@ -287,8 +303,13 @@
         <input id="filePitchD" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-        <input type="checkbox" id="showD" checked> Show D
+      <label class="small">
+        Group:
+        <select id="showD">
+          <option value="off" selected>Off</option>
+          <option value="context">Context</option>
+          <option value="complement">Complement</option>
+        </select>
       </label>
     </div>
 
@@ -307,11 +328,15 @@
         <input id="filePitchE" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-        <input type="checkbox" id="showE" checked> Show E
+      <label class="small">
+        Group:
+        <select id="showE">
+          <option value="off" selected>Off</option>
+          <option value="context">Context</option>
+          <option value="complement">Complement</option>
+        </select>
       </label>
     </div>
-
 
     <div class="col">
       <div class="engineTitle">
@@ -327,8 +352,13 @@
         <input id="filePitchF" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label style="flex-direction:row;align-items:center;gap:8px;font-size:14px;">
-        <input type="checkbox" id="showF" checked> Show F
+      <label class="small">
+        Group:
+        <select id="showF">
+          <option value="off" selected>Off</option>
+          <option value="context">Context</option>
+          <option value="complement">Complement</option>
+        </select>
       </label>
     </div>
 
@@ -413,18 +443,6 @@
               <option value="25">25</option>
             </select>
           </label>
-
-          <label class="small">
-            Viz2 track:
-            <select id="v2trackselect">
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="C">C</option>
-              <option value="D">D</option>
-              <option value="E">E</option>
-              <option value="F">F</option>
-            </select>
-          </label>
         </div>
 
       </div>
@@ -443,9 +461,10 @@
 
 
 <script src="tracks.js"></script>
+<script src="group-bus.js"></script>
 <script src="static-spectrum.js"></script>
 <script src="viz.js"></script>
-<script src="sethares.js"></script>
+<script src="viz2.js"></script>
 <script src="main.js"></script>
 
 </body>

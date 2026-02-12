@@ -1,3 +1,9 @@
+// holds list of tracks we want to visualise (vizTracks)
+//reads frequency data from each track's analyser and draws it on canvas
+// draws the axes and peak labels
+//main.js calls setTracks(tracks) and startViz()
+
+
 let vizTracks = []; //list of tracks we want to draw
 let pausedViz = false; //global pause flag
 
@@ -276,9 +282,7 @@ if (window.spectrumMode === "static" && track.staticBins) {
 }
 
 
-
-
-  });
+});
 
   ctx.globalAlpha = 1;
 }

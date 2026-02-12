@@ -1,13 +1,33 @@
 // track.js
-
+// defines track class (id, colour, file, peaks array, analyser, gain)
+// tracks instantiates in main.js and stored in window.tracks array
+// handles file loading (decoding audio into aduio buffer)
+//creates and controls playback of AudioBufferSourceNode for each track
 class Track {
   constructor(opts) {
     this.id = opts.id;           // A, B, C etc
     this.color = opts.color;     // used in draw()
-    this.engine = "file"
-    this.showCheckbox = document.getElementById(opts.showCheckboxId); // show/hide checkbox
-
+    this.engine = "file"          // probably remove
     this.peaks = [];              // stores tracks peaks
+
+    this.groupSelect = document.getElementById(opts.showCheckboxId);
+    this.group = this.groupSelect ? this.groupSelect.value : 'context';
+    this.show = (this.group !== 'off');
+
+    this.analyser = window.makeAnalyser();
+    this.gain = window.audioCtx.createGain();
+
+    // --- Group routing (analysis buses) ---
+    // Each track connects its *stable* output gain to one bus gain for analysis.
+    this._currentBus = null;
+
+    this.gain.gain.value = this.show ? 1 : 0;
+    this._applyGroupRouting();
+
+    // permanent wiring
+    this.analyser.connect(this.gain);
+    this.gain.connect(window.audioCtx.destination);
+
 
     //file loading stuff
     this.fileBuffer = null;      // decoded AudioBuffer
@@ -26,32 +46,56 @@ class Track {
       this.fileSource.playbackRate.setValueAtTime(r, window.audioCtx.currentTime);
     }
     });
-
-    this.show = this.showCheckbox ? this.showCheckbox.checked : true;
-    this.analyser = makeAnalyser();
-    this.gain = window.audioCtx.createGain();
-    this.gain.gain.value = this.show ? 1 : 0;
-
-
-    // permanent wiring
-    this.analyser.connect(this.gain);
-    this.gain.connect(window.audioCtx.destination);
     
-
     this._wireUI();
   }
+
+
+   _applyGroupRouting() {
+  // detach from previous bus
+  if (this._currentBus) {
+    this._currentBus.detach(this);
+    this._currentBus = null;
+  }
+
+  if (!window.buses) return;
+
+  // if "off", don't attach anywhere
+  if (this.group === "off") return;
+
+  const bus = window.buses[this.group];
+  if (!bus) return;
+
+  bus.attach(this);
+  this._currentBus = bus;
+}
+
 
   _wireUI() {
 
 
-// show / hide checkbox, if false, gain set to 0 and draw skips it else show
-    if (this.showCheckbox) {
-      this.showCheckbox.addEventListener('change', () => {
-        this.show = this.showCheckbox.checked;
-        if (this.gain) this.gain.gain.value = this.show ? 1 : 0;
-      });
-    }
+if (this.groupSelect) {
+    // Apply initial state (in case HTML default is Off)
+    this.group = this.groupSelect.value;
+    this.show = (this.group !== "off");
+    if (this.gain) this.gain.gain.value = this.show ? 1 : 0;
+    this._applyGroupRouting();
+
+    // React to changes
+    this.groupSelect.addEventListener("change", () => {
+      this.group = this.groupSelect.value;
+      this.show = (this.group !== "off");
+
+      // mute/unmute
+      if (this.gain) {
+        this.gain.gain.setValueAtTime(this.show ? 1 : 0, window.audioCtx.currentTime);
+      }
+
+      // reconnect to correct bus (or none if off)
+      this._applyGroupRouting();
+    });
   }
+}
 
 buildAudioGraph() {
 
@@ -110,11 +154,10 @@ async loadFile() {
   // rebuild graph so analyser exists (and fileSource is ready if engine=file)
   this.buildAudioGraph();
 
-  // --- STATIC WHOLE-FILE SPECTRUM ---
-  // Requires you to include static-spectrum.js which defines window.StaticSpectrum.compute
+  // compute static spectrum
   try {
     const fftSize = this.analyser ? this.analyser.fftSize : 2048;
-    const hopSize = fftSize / 2;
+    const hopSize = fftSize / 4; // more overlap = better visuals
 
     this.staticBins = await StaticSpectrum.compute(this.fileBuffer, {
       fftSize,
