@@ -98,7 +98,6 @@ startViz2(); //start viz2 (dissonance curve) with first track
 
 
 
-
 async function start() {
   await window.audioCtx.resume();
 
@@ -214,10 +213,37 @@ audSlider.addEventListener("input", () => {
 });
 
 
+
+
+let activeAuditionSources = [];
+
 document.getElementById("auditionPlay").addEventListener("click", () => {
-  if (!window.selectedTrack) return;       
-  window.selectedTrack.auditionInterval(window.auditionCents);
+  if (window.audioCtx.state !== "running") window.audioCtx.resume();
+
+  // 1. Stop any currently playing audition sources
+  activeAuditionSources.forEach(src => {
+    try { src.stop(); } catch(e) {}
+  });
+  activeAuditionSources = [];
+
+  const when = window.audioCtx.currentTime;
+  const cents = window.auditionCents;
+  const ratio = Math.pow(2, cents / 1200);
+
+  // 2. Play Context Bus at normal pitch (rate 1.0)
+  if (window.buses.context) {
+    const contextSrcs = window.buses.context.playAudition(1.0, when);
+    activeAuditionSources.push(...contextSrcs);
+  }
+
+  // 3. Play Complement Bus at shifted pitch
+  if (window.buses.complement) {
+    const complementSrcs = window.buses.complement.playAudition(ratio, when);
+    activeAuditionSources.push(...complementSrcs);
+  }
 });
+
+
 
 
 //track select shit

@@ -176,62 +176,20 @@ async loadFile() {
 
 
 
-// audition an interval of given size (in cents) from current file buffer (viz2click)
-auditionInterval(cents) {
-  if (!this.fileBuffer) return;
+// creates one shot audition source
+createAuditionSource(rate, when) {
+  if (!this.fileBuffer) return null;
 
-  // Make sure audio can start (in case click happens before Start button)
-  if (window.audioCtx.state !== "running") audioCtx.resume();
+  const src = window.audioCtx.createBufferSource();
+  src.buffer = this.fileBuffer;
+  src.loop = false;
+  src.playbackRate.setValueAtTime(rate, when);
 
-  // --- Stop any currently playing audition pair ---
-  this.stopAudition();
-
-  const when = window.audioCtx.currentTime; // immediate
-  const ratio = Math.pow(2, cents / 1200);
-
-  // Helper to create + start one source at a given playbackRate
-  const makeSrc = (rate) => {
-    const src = window.audioCtx.createBufferSource();
-    src.buffer = this.fileBuffer;
-    src.loop = false;
-    src.playbackRate.setValueAtTime(rate, when);
-
-    // Route: straight to speakers (cleanest for "audition")
-    // If you want it to show up in viz1/viz2, route via analyser/gain instead:
-    // src.connect(this.analyser).connect(this.gain);
-    src.connect(window.audioCtx.destination);
-
-    // Clean up when it ends
-    src.onended = () => {
-      try { src.disconnect(); } catch (e) {}
-      // remove from active list if still present
-      if (this._auditionSources) {
-        this._auditionSources = this._auditionSources.filter(s => s !== src);
-        if (this._auditionSources.length === 0) this._auditionSources = null;
-      }
-    };
-
-    src.start(when);
-    return src;
-  };
-
-  const root = makeSrc(1.0);
-  const shifted = makeSrc(ratio);
-
-  // Keep references so we can stop them on the next click
-  this._auditionSources = [root, shifted];
+  // Direct to destination ensures the audition sounds don't 
+  // mess with the "Live" analyser data used for peaks.
+  src.connect(window.audioCtx.destination);
+  
+  src.start(when);
+  return src;
 }
-
-stopAudition() {
-  if (!this._auditionSources) return;
-
-  for (const src of this._auditionSources) {
-    try { src.onended = null; } catch (e) {}
-    try { src.stop(); } catch (e) {}
-    try { src.disconnect(); } catch (e) {}
-  }
-
-  this._auditionSources = null;
-}
-
 }

@@ -97,6 +97,15 @@ class GroupBus {
   return this.staticBins;
 }
 
+// Add this to your GroupBus class in group-bus.js
+playAudition(rate, when) {
+  const sources = [];
+  this.tracks.forEach(track => {
+    const s = track.createAuditionSource(rate, when);
+    if (s) sources.push(s);
+  });
+  return sources;
+}
 
 
 }
