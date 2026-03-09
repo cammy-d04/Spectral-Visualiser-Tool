@@ -138,7 +138,7 @@
       frames++;
     }
 
-    if (frames === 0) return new Uint8Array(half);
+    if (frames === 0) return { bytes: new Uint8Array(half), raw: new Float32Array(half) };
 
     // average + convert to magnitude
     const mag = new Float32Array(half);
@@ -147,7 +147,7 @@
       mag[k] = Math.sqrt(accPow[k] * invFrames);
     }
 
-    return normaliseToByteBins(mag);
+    return { bytes: normaliseToByteBins(mag), raw: mag };
   }
 
   window.StaticSpectrum = { compute };

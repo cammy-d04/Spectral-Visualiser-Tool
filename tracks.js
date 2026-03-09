@@ -4,49 +4,46 @@
 // handles file loading (decoding audio into aduio buffer)
 //creates and controls playback of AudioBufferSourceNode for each track
 class Track {
-  constructor(opts) {
+  constructor(opts) { 
     this.id = opts.id;           // A, B, C etc
-    this.color = opts.color;     // used in draw()
-    this.engine = "file"          // probably remove
-    this.peaks = [];              // stores tracks peaks
+    this.color = opts.color;     // (prob dont need)
 
-    this.groupSelect = document.getElementById(opts.showCheckboxId);
+    this.groupSelect = document.getElementById("show" + this.id);
     this.group = this.groupSelect ? this.groupSelect.value : 'context';
     this.show = (this.group !== 'off');
 
-    this.analyser = window.makeAnalyser();
     this.gain = window.audioCtx.createGain();
 
-    // --- Group routing (analysis buses) ---
     // Each track connects its *stable* output gain to one bus gain for analysis.
     this._currentBus = null;
 
     this.gain.gain.value = this.show ? 1 : 0;
     this._applyGroupRouting();
 
-    // permanent wiring
-    this.analyser.connect(this.gain);
+    //connect to gain
     this.gain.connect(window.audioCtx.destination);
-
 
     //file loading stuff
     this.fileBuffer = null;      // decoded AudioBuffer
     this.fileSource = null;      // current AudioBufferSourceNode
-    this.fileInput = null;       // the <input type="file"> assigned to this track
-    this.fileInput = document.getElementById("fileInput" + this.id);
+    this.fileInput = document.getElementById("fileInput" + this.id); // the <input type="file"> assigned to this track in the html
     this.fileInput.addEventListener("change", () => this.loadFile());
-    this.pitchSlider = document.getElementById("filePitch" + this.id);
 
-
-    this.pitchSlider.addEventListener("input", () => {
-    const r = parseFloat(this.pitchSlider.value);
-
-    // live-update the currently playing loop
-    if (this.fileSource) {
-      this.fileSource.playbackRate.setValueAtTime(r, window.audioCtx.currentTime);
-    }
-    });
     
+    this.volSlider = document.getElementById("vol" + this.id);
+    this.volSlider.addEventListener("input", () => {
+      const v = parseFloat(this.volSlider.value);
+      this.gain.gain.setValueAtTime(v, window.audioCtx.currentTime);
+
+      clearTimeout(this._volDebounce);
+      this._volDebounce = setTimeout(() => {
+        if (this._currentBus) {
+          this._currentBus.computeStaticSpectrum().catch(console.warn);
+        }
+      }, 150);
+    });
+
+
     this._wireUI();
   }
 
@@ -71,52 +68,51 @@ class Track {
 }
 
 
-  _wireUI() {
+_wireUI() {
 
-
-if (this.groupSelect) {
+  if (this.groupSelect) {
     // Apply initial state (in case HTML default is Off)
     this.group = this.groupSelect.value;
     this.show = (this.group !== "off");
     if (this.gain) this.gain.gain.value = this.show ? 1 : 0;
     this._applyGroupRouting();
 
-    // React to changes
+
     this.groupSelect.addEventListener("change", () => {
       this.group = this.groupSelect.value;
       this.show = (this.group !== "off");
-
-      // mute/unmute
+      
       if (this.gain) {
         this.gain.gain.setValueAtTime(this.show ? 1 : 0, window.audioCtx.currentTime);
       }
-
-      // reconnect to correct bus (or none if off)
       this._applyGroupRouting();
     });
   }
 }
-
+/*
+creates buffer
+*/
 buildAudioGraph() {
 
-  if (!this.fileBuffer) return;
+  if (!this.fileBuffer) return; 
 
+  //cleans up any previous source if it exists (if loading new file onto track, replacing old one)
   if (this.fileSource) {
     try { this.fileSource.stop(); } catch(e){}
     try { this.fileSource.disconnect(); } catch(e){}
   }
 
-  const src = window.audioCtx.createBufferSource();
-  src.buffer = this.fileBuffer;
-  src.loop = true;
+  const src = window.audioCtx.createBufferSource(); //creates buffer source node (tape player basically)
+  src.buffer = this.fileBuffer; //put tape in tape player
+  src.loop = false;
 
-  src.playbackRate.setValueAtTime(
-    parseFloat(this.pitchSlider.value),
-    window.audioCtx.currentTime
-  );
+  // plug tape players output into the analyser input
+  //chain is AudioBufferSourceNode -> AnalyserNode -> GainNode -> Destination
+  // also:   AudioBufferSourceNode -> AnalyserNode -> GroupBus GainNode -> GroupBus AnalyserNode
+  src.connect(this.gain);
 
-  src.connect(this.analyser);
-
+  // we don't connect the source directly to destination because we want to be able to control the gain 
+  // (for muting when switching groups) or pitch change or whatever.
   this.fileSource = src;
 }
 
@@ -140,34 +136,30 @@ stop() {
 }
 
 
-
+/*
+loads file from input, turns it into an audio node then 
+kicks off the draw loop if not started already
+*/
 
 async loadFile() {
-  const file = this.fileInput.files[0];
+  const file = this.fileInput.files[0]; // get the selected file from input
   if (!file) return;
 
-  const arrayBuf = await file.arrayBuffer();
-  this.fileBuffer = await window.audioCtx.decodeAudioData(arrayBuf);
+  const arrayBuf = await file.arrayBuffer(); // read file into arraybuffer
+  this.fileBuffer = await window.audioCtx.decodeAudioData(arrayBuf); // turn arraybuffer (raw bytes) into AudioBuffer
 
-  console.log("Loaded file for track", this.id);
+  this.buildAudioGraph(); // creates audio node needed to play/analyse file
 
-  // rebuild graph so analyser exists (and fileSource is ready if engine=file)
-  this.buildAudioGraph();
+  await window.audioCtx.resume(); //browsers block audioplayback until user interaction, so resume just in case
 
-  // compute static spectrum
-  try {
-    const fftSize = this.analyser ? this.analyser.fftSize : 2048;
-    const hopSize = fftSize / 4; // more overlap = better visuals
+  if (!window.vizStarted) { //first time any track loads a file, kicks off draw loop (in viz.js)
+    window.vizStarted = true; 
+    draw(); 
+  }
 
-    this.staticBins = await StaticSpectrum.compute(this.fileBuffer, {
-      fftSize,
-      hopSize
-    });
-
-    console.log(`Static spectrum computed for track ${this.id}`, this.staticBins.length);
-  } catch (e) {
-    console.warn("Static spectrum compute failed:", e);
-    this.staticBins = null;
+  //recompute static spectrum if bus selected and file changed
+  if (this._currentBus) {
+  this._currentBus.computeStaticSpectrum().catch(console.warn);
   }
 }
 
@@ -187,7 +179,7 @@ createAuditionSource(rate, when) {
 
   // Direct to destination ensures the audition sounds don't 
   // mess with the "Live" analyser data used for peaks.
-  src.connect(window.audioCtx.destination);
+  src.connect(this.gain);
   
   src.start(when);
   return src;

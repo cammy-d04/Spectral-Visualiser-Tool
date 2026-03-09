@@ -32,7 +32,7 @@ window.minSepHz = 30;
 window.peakFMin = 60;
 window.spectrumMode = "static"; // or "static"
 window.ampCompress = 0.50;
-window.centsStep = 10;
+window.centsStep = 1
 
 
 // Array of tracks
@@ -42,76 +42,41 @@ let tracks = [];
 tracks = [
   new Track({
     id: 'A',
-    color: 'red',
-    freqSliderId: 'freqSliderA',
-    freqInputId: 'freqInputA',
-    freqLabelId: 'freqValA',
-    showCheckboxId: 'showA'
   }),
   new Track({
     id: 'B',
-    color: 'green',
-    freqSliderId: 'freqSliderB',
-    freqInputId: 'freqInputB',
-    freqLabelId: 'freqValB',
-    showCheckboxId: 'showB'
   }),
   new Track({
     id: 'C',
-    color: 'seagreen',
-    freqSliderId: 'freqSliderC',
-    freqInputId: 'freqInputC',
-    freqLabelId: 'freqValC',
-    showCheckboxId: 'showC'
   }),
   new Track({
     id: 'D',
-    color: 'orange',
-    freqSliderId: 'freqSliderD',
-    freqInputId: 'freqInputD',
-    freqLabelId: 'freqValD',
-    showCheckboxId: 'showD'
   }),
   new Track({
     id: 'E',
-    color: 'purple',
-    freqSliderId: 'freqSliderE',
-    freqInputId: 'freqInputE',
-    freqLabelId: 'freqValE',
-    showCheckboxId: 'showE'
   }),
   new Track({
     id: 'F',
-    color: 'goldenrod',
-    freqSliderId: 'freqSliderF',
-    freqInputId: 'freqInputF',
-    freqLabelId: 'freqValF',
-    showCheckboxId: 'showF'
   })
 ];
 
 let xZoom = 1;
 
-//send tracks to visualisation system
-setTracks([window.buses.context, window.buses.complement]); 
+//set tracks to be used in viz 1/2
+vizTracks = [window.buses.context, window.buses.complement]; 
+
+startViz();  // start viz
 startViz2(); //start viz2 (dissonance curve) with first track
 
 
 
-async function start() {
-  await window.audioCtx.resume();
 
-  tracks.forEach(t => {
-    t.buildAudioGraph(); // makes fileSource if buffer exists
-    t.start();           // starts it (loops because src.loop = true)
-  });
 
-  draw();
-}
 
-function stop() {
-  tracks.forEach(t => t.stop());
-}
+
+
+
+
 
 
 
@@ -119,49 +84,9 @@ function stop() {
 // UI wiring
 // =====================
 
-document.getElementById('start').addEventListener('click', () => {
-
-  console.log("=== START BUTTON CLICKED ===");
-
-  const anyRunning = tracks.some(t => {
-    console.log(`Track ${t.id}: voice=${!!t.voice}, fileSource=${!!t.fileSource}`);
-    return (t.voice || t.fileSource);
-  });
-
-  console.log("anyRunning =", anyRunning);
-
-  window.audioCtx.resume();
-
-  if (!anyRunning) {
-    console.log("-> calling start()");
-    start();
-  } else {
-    console.log("-> calling stop()");
-    stop();
-  }
-});
-
-
-
 document.getElementById("xZoom").addEventListener("input", e => {
   xZoom = parseFloat(e.target.value);
 });
-
-
-document.getElementById("pauseViz").addEventListener("click", () => {
-  pausedViz = !pausedViz;
-  console.log("Viz paused =", pausedViz);
-
-  if (!pausedViz) {
-    // if we're unpausing, restart the loop cleanly
-    requestAnimationFrame(draw);
-    requestAnimationFrame(drawViz2);
-  }
-});
-
-
-
-
 
 
 const threshEl = document.getElementById("threshFrac");
@@ -199,9 +124,6 @@ ampEl.addEventListener("input", () => {
   ampVal.textContent = window.ampCompress.toFixed(2);
 });
 
-document.getElementById("centsStep").addEventListener("change", (e) => {
-  window.centsStep = Number(e.target.value);
-});
 
 window.auditionCents = 0;
 

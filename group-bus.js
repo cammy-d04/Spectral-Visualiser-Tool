@@ -24,6 +24,8 @@ class GroupBus {
     if (!track || !track.gain) return;
     if (this.tracks.has(track)) return;
 
+    console.log(`Bus ${this.id} attaching track ${track.id}, total: ${this.tracks.size + 1}`);
+
     track.gain.connect(this.gain);
     this.tracks.add(track);
     this.computeStaticSpectrum().catch(console.warn);
@@ -64,12 +66,15 @@ class GroupBus {
     // make offline mono audio context for rendering the mix
     const offline = new OfflineAudioContext(1, maxSamples, sr);
 
-    for (const t of sources) {
+   for (const t of sources) {
       const src = offline.createBufferSource();
       src.buffer = t.fileBuffer;
 
-      // optional: track-level gain could go here if you add one later
-      src.connect(offline.destination);
+      const g = offline.createGain();
+      g.gain.value = t.gain.gain.value;
+
+      src.connect(g);
+      g.connect(offline.destination);
       src.start(0);
     }
 
@@ -78,6 +83,31 @@ class GroupBus {
 
 
 
+  normalizeAllBuses() {
+      const buses = [window.buses.context, window.buses.complement];
+    
+      // find the global max across all buses
+      let globalMax = 0;
+      for (const bus of buses) {
+          if (!bus.staticRaw) continue;
+          for (let i = 0; i < bus.staticRaw.length; i++) {
+              if (bus.staticRaw[i] > globalMax) globalMax = bus.staticRaw[i];
+          }
+      }
+    
+      if (globalMax <= 0) return;
+    
+      // now rebuild each bus's staticBins using that shared max
+      for (const bus of buses) {
+          if (!bus.staticRaw) continue;
+          const out = new Uint8Array(bus.staticRaw.length);
+          for (let i = 0; i < bus.staticRaw.length; i++) {
+              const v = Math.log1p(20 * (bus.staticRaw[i] / globalMax)) / Math.log1p(20);
+              out[i] = Math.max(0, Math.min(255, Math.round(v * 255)));
+          }
+          bus.staticBins = out;
+    }
+  }
 
 
   async computeStaticSpectrum() {
@@ -92,10 +122,14 @@ class GroupBus {
   const hopSize = Math.floor(fftSize / 4);
 
   // StaticSpectrum.compute should take an AudioBuffer and return bins/array/etc.
-  this.staticBins = await StaticSpectrum.compute(mixed, { fftSize, hopSize });
-
+  const result = await StaticSpectrum.compute(mixed, { fftSize, hopSize });
+  this.staticBins = result.bytes;
+  this.staticRaw = result.raw;
+  this.normalizeAllBuses();  // re-scale both buses against shared max
   return this.staticBins;
 }
+
+
 
 // Add this to your GroupBus class in group-bus.js
 playAudition(rate, when) {

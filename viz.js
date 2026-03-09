@@ -5,37 +5,23 @@
 
 
 let vizTracks = []; //list of tracks we want to draw
-let pausedViz = false; //global pause flag
 
 
 // Canvases
 const canvas = document.getElementById('viz'); //get canvas element
 const ctx = canvas.getContext('2d'); //2d drawing context so can draw lines n stuff
 
-function setTracks(tracks) { //tracks to visualise setter
-  vizTracks = tracks;
-}
 
 function startViz() { 
-  requestAnimationFrame(draw);//begin animation loop
+  requestAnimationFrame(draw); //begin animation loop
 }
-
-
-//create analyser with consistent FFT size across all tracks
-// 2048 point FFT gives 11hz bins at 44100hz sample rate
-function makeAnalyser(){
-  const analyser = window.audioCtx.createAnalyser();// analyser reads audio data from track
-  analyser.fftSize = 16384;
-  return analyser;
-}
-
 
 
 
 // Layout / sizing
 function resize(){
   canvas.width  = canvas.clientWidth;
-  canvas.height  = canvas.clientHeight;
+  canvas.height = canvas.clientHeight;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -106,6 +92,7 @@ for (let i = 0; i <= ticks; i++) {
 
 
 
+// Ensure track has a buffer for analyser data and an optional bin->Hz scale
 function ensureTrackVizBuffers(track) {
   const bufLen = track.analyser.frequencyBinCount;
 
@@ -122,16 +109,16 @@ function ensureTrackVizBuffers(track) {
 
 
 
+
+
 // =====================
 // Multi-track draw loop
 // =====================
 function draw() {
-  if (pausedViz) return;
+
   // only draw if we have at least one analyser running
   const activeTracks = vizTracks.filter(t => t.analyser);
-  console.log("activetracks = ", activeTracks);
   if (activeTracks.length === 0) return;
-  
 
   requestAnimationFrame(draw); // Schedule next frame
 
@@ -139,13 +126,12 @@ function draw() {
   const h = canvas.height;
   const nyquist = window.audioCtx.sampleRate / 2;
   const maxAmp = 1.0;
-
-   // height of plotting area
-  const plotH = h - MARGIN_BOTTOM - 10;
+  const plotH = h - MARGIN_BOTTOM - 10; // height of plotting area
 
   // clear background
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, w, h);
+
   drawAxes(nyquist, maxAmp);
 
   // assume all analysers use same fftSize
@@ -160,8 +146,12 @@ function draw() {
     ensureTrackVizBuffers(track);
 
 let bins;
-if (window.spectrumMode === "static" && track.staticBins) {
-  // feed the static bins into the existing pipeline
+
+const showGhost = document.getElementById('complementOR')?.checked;
+if (track === window.buses.complement && showGhost) return;
+
+// For buses, use their staticBins; for tracks, use theirs
+if (track.staticBins) {
   track._bins.set(track.staticBins);
   bins = track._bins;
 } else {
@@ -173,7 +163,7 @@ if (window.spectrumMode === "static" && track.staticBins) {
 
 
     // --- Peak picking code ---
-    const MAX_PEAKS = window.maxPeaksPicked ?? 20;
+    const MAX_PEAKS = window.maxPeaksPicked ?? 7;
 
     let maxBin = 0;
     for (let k = 0; k < bufLen; k++) {
@@ -181,6 +171,7 @@ if (window.spectrumMode === "static" && track.staticBins) {
          maxBin = bins[k];
         }
     }
+    
     //parameters wired to controls
     const THRESH = (window.threshFrac ?? 0.2) * maxBin;
     const binHz = window.audioCtx.sampleRate / track.analyser.fftSize;
@@ -279,10 +270,43 @@ if (window.spectrumMode === "static" && track.staticBins) {
 
       // label slightly above
       ctx.fillText(`${Math.round(fHz)}Hz`, x + 4, y + 12);
-}
-
-
+  }
 });
+
+
+
+
+// --- Ghost spectrum: complement stretched by audition interval ---
+
+const showGhost = document.getElementById('complementOR')?.checked;
+const complementBus = window.buses.complement;
+  if (complementBus && complementBus.staticBins && window.auditionCents != null && showGhost) {
+    const ratio = Math.pow(2, window.auditionCents / 1200);
+    const bins = complementBus.staticBins;
+    const binHz = window.audioCtx.sampleRate / complementBus.analyser.fftSize;
+
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#6456fe'; 
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    let started = false;
+    for (let i = 0; i < bins.length; i++) {
+      const stretchedF = i * binHz * ratio; // stretched frequency
+      const frac = (stretchedF / nyquist);  // fraction of nyquist
+      let zoomedFrac = frac * xZoom;
+      if (zoomedFrac > 1) break; // off screen
+
+      const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
+      const v = bins[i] / 255;
+      const y = (h - MARGIN_BOTTOM) - v * plotH;
+
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]); // reset dash
+  }
 
   ctx.globalAlpha = 1;
 }

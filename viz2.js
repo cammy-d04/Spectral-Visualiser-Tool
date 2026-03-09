@@ -282,7 +282,6 @@ const CURVE_MS = 1000 / CURVE_HZ;
 
 
 function drawViz2() {
-  if (pausedViz) return;
 
   requestAnimationFrame(drawViz2);
 
@@ -310,9 +309,31 @@ function drawViz2() {
     });
     lastCurveTime = now;
   }
-
   const curve = cachedCurve;
   if (!curve || curve.cents.length === 0) return;
+
+  // --- Master dissonance meter ---
+else{
+  const currentCents = window.auditionCents ?? 0;
+
+  // find nearest index in curve for current audition position
+  const idx = Math.round((currentCents - 0) / (window.centsStep ?? 1));
+  const clampedIdx = Math.max(0, Math.min(curve.values.length - 1, idx));
+  const val = curve.values[clampedIdx]; // 0..1 (normalized)
+
+  // color: green -> yellow -> red
+  const r = Math.round(Math.min(255, val * 2 * 255));
+  const g = Math.round(Math.min(255, (1 - val) * 2 * 255));
+  const color = `rgb(${r},${g},0)`;
+
+  const fill = document.getElementById('dissonanceMeterFill');
+  const label = document.getElementById('dissonanceMeterVal');
+  if (fill) {
+    fill.style.width = `${(val * 100).toFixed(1)}%`;
+    fill.style.background = color;
+  }
+  if (label) label.textContent = val.toFixed(3);
+}
 
   const { xs, ys, plotW, plotH } = viz2PlotGeom();
 
