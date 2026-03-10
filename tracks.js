@@ -1,335 +1,285 @@
 // track.js
-
+// defines track class (id, colour, file, peaks array, analyser, gain)
+// tracks instantiates in main.js and stored in window.tracks array
+// handles file loading (decoding audio into aduio buffer)
+//creates and controls playback of AudioBufferSourceNode for each track
 class Track {
-  constructor(opts) {
+  constructor(opts) { 
     this.id = opts.id;           // A, B, C etc
-    this.color = opts.color;     // used in draw()
-    this.engineSelect = document.getElementById(opts.engineSelectId); // synthesis engine select
-    this.engine = this.engineSelect ? this.engineSelect.value : "sinOsc";
-    this.freqSlider   = document.getElementById(opts.freqSliderId); // frequency slider
-    this.freqInput    = document.getElementById(opts.freqInputId); // frequency text input
-    this.freqLabel    = document.getElementById(opts.freqLabelId); // frequency label
-    this.showCheckbox = document.getElementById(opts.showCheckboxId); // show/hide checkbox
+    this.color = opts.color;     // (prob dont need)
 
-    // Optional params (for additive synthesis)
-    this.BSlider      = opts.BSliderId      ? document.getElementById(opts.BSliderId)      : null;
-    this.BLabel       = opts.BLabelId       ? document.getElementById(opts.BLabelId)       : null;
-    this.posSlider    = opts.posSliderId    ? document.getElementById(opts.posSliderId)    : null;
-    this.posLabel     = opts.posLabelId     ? document.getElementById(opts.posLabelId)     : null;
-    this.decaySlider  = opts.decaySliderId  ? document.getElementById(opts.decaySliderId)  : null;
-    this.decayLabel   = opts.decayLabelId   ? document.getElementById(opts.decayLabelId)   : null;
-    this.brightSlider = opts.brightSliderId ? document.getElementById(opts.brightSliderId) : null;
-    this.brightLabel  = opts.brightLabelId  ? document.getElementById(opts.brightLabelId)  : null;
+    this.groupSelect = document.getElementById("show" + this.id);
+    this.group = this.groupSelect ? this.groupSelect.value : 'context';
+    this.show = (this.group !== 'off');
 
-    this.peaks = [];              // stores tracks peaks
-    //optional stuff
+    this.gain = window.audioCtx.createGain();
+
+    // Each track connects its *stable* output gain to one bus gain for analysis.
+    this._currentBus = null;
+
+    this.gain.gain.value = this.show ? 1 : 0;
+    this._applyGroupRouting();
+
+    //connect to gain
+    this.gain.connect(window.audioCtx.destination);
 
     //file loading stuff
     this.fileBuffer = null;      // decoded AudioBuffer
     this.fileSource = null;      // current AudioBufferSourceNode
-    this.fileInput = null;       // the <input type="file"> assigned to this track
-    this.fileInput = document.getElementById("fileInput" + this.id);
+    this.fileInput = document.getElementById("fileInput" + this.id); // the <input type="file"> assigned to this track in the html
     this.fileInput.addEventListener("change", () => this.loadFile());
-    this.pitchSlider = document.getElementById("filePitch" + this.id);
 
-    this.pitchSlider.addEventListener("input", () => {
-  if (this.engine === "file" && this.voice && this.voice.src) {
-    const r = parseFloat(this.pitchSlider.value);
-    this.voice.src.playbackRate.setValueAtTime(r, audioCtx.currentTime);
-  }
-});
+    // crop bounds as fractions 0..1 of file duration
+    this.cropStart = 0;
+    this.cropEnd = 1;
+    
+    this.volSlider = document.getElementById("vol" + this.id);
+    this.volSlider.addEventListener("input", () => {
+      const v = parseFloat(this.volSlider.value);
+      this.gain.gain.setValueAtTime(v, window.audioCtx.currentTime);
 
+      clearTimeout(this._volDebounce);
+      this._volDebounce = setTimeout(() => {
+        if (this._currentBus) {
+          this._currentBus.computeStaticSpectrum().catch(console.warn);
+        }
+      }, 150);
+    });
 
-    // audio nodes
-    this.analyser = null; // analyser node
-    this.gain     = null; // gain node
-    this.voice    = null; // synthesis voice
-    this.show     = true; // visible by default
+    // crop sliders
+    this.cropStartSlider = document.getElementById("cropStart" + this.id);
+    this.cropEndSlider = document.getElementById("cropEnd" + this.id);
+    this.cropStartVal = document.getElementById("cropStartVal" + this.id);
+    this.cropEndVal = document.getElementById("cropEndVal" + this.id);
+
+    if (this.cropStartSlider) {
+      this.cropStartSlider.addEventListener("input", () => {
+        let v = parseFloat(this.cropStartSlider.value);
+        if (v >= this.cropEnd) v = this.cropEnd - 0.01;
+        this.cropStart = Math.max(0, v);
+        this.cropStartSlider.value = this.cropStart;
+        if (this.cropStartVal) this.cropStartVal.textContent = this.cropStart.toFixed(2);
+        this._debounceCropRecompute();
+      });
+    }
+    if (this.cropEndSlider) {
+      this.cropEndSlider.addEventListener("input", () => {
+        let v = parseFloat(this.cropEndSlider.value);
+        if (v <= this.cropStart) v = this.cropStart + 0.01;
+        this.cropEnd = Math.min(1, v);
+        this.cropEndSlider.value = this.cropEnd;
+        if (this.cropEndVal) this.cropEndVal.textContent = this.cropEnd.toFixed(2);
+        this._debounceCropRecompute();
+      });
+    }
+
 
     this._wireUI();
   }
 
-  _wireUI() {
-    // If freq slider / engine select don't exist, this track is "headless"
-    if (!this.freqSlider) return;
 
-    // if change engine then rebuild audio graph with new voice
-    if (this.engineSelect) {
-      this.engineSelect.addEventListener('change', () => {
-        this.engine = this.engineSelect.value;
-        if (!window.audioCtx) return;
-        this.rebuildVoice();
-        if (window.toggleParamVisibility) { // update visible params
-          window.toggleParamVisibility();
-        }
-      });
-    }
-
-    // freq slider updates label, text freq input, tells current voice to change freq
-    this.freqSlider.addEventListener('input', () => {
-      const f = parseFloat(this.freqSlider.value);
-      if (this.freqLabel) this.freqLabel.textContent = f;
-      if (this.freqInput) this.freqInput.value = f;
-      if (this.voice && this.voice.setFreq) this.voice.setFreq(f);
-    });
-
-    // numeric freq input updates slider, label, tells current voice to change freq
-    if (this.freqInput) {
-      this.freqInput.addEventListener('change', () => {
-        const f = parseFloat(this.freqInput.value);
-        this.freqSlider.value = f;
-        if (this.freqLabel) this.freqLabel.textContent = f;
-        if (this.voice && this.voice.setFreq) this.voice.setFreq(f);
-      });
-    }
-// show / hide checkbox, if false, gain set to 0 and draw skips it else show
-    if (this.showCheckbox) {
-      this.showCheckbox.addEventListener('change', () => {
-        this.show = this.showCheckbox.checked;
-        if (this.gain) this.gain.gain.value = this.show ? 1 : 0;
-      });
-    }
-
-    // Additive synthesis params  
-
-    if (this.BSlider && this.BLabel) {
-      this.BSlider.addEventListener('input', () => {
-        const v = parseFloat(this.BSlider.value);
-        this.BLabel.textContent = v.toFixed(3);
-        if (this.voice && this.voice.setB) this.voice.setB(v);
-      });
-    }
-// pluck position
-    if (this.posSlider && this.posLabel) {
-      this.posSlider.addEventListener('input', () => {
-        const v = parseFloat(this.posSlider.value);
-        this.posLabel.textContent = v.toFixed(2);
-        if (this.voice && this.voice.setPluckPos) this.voice.setPluckPos(v);
-      });
-    }
-// decay time
-    if (this.decaySlider && this.decayLabel) {
-      this.decaySlider.addEventListener('input', () => {
-        const v = parseFloat(this.decaySlider.value);
-        this.decayLabel.textContent = v.toFixed(1);
-        if (this.voice && this.voice.setDecay) this.voice.setDecay(v);
-      });
-    }
-// brightness
-    if (this.brightSlider && this.brightLabel) {
-      this.brightSlider.addEventListener('input', () => {
-        const v = parseFloat(this.brightSlider.value);
-        this.brightLabel.textContent = v.toFixed(2);
-        if (this.voice && this.voice.setBrightness) this.voice.setBrightness(v);
-      });
-    }
+   _applyGroupRouting() {
+  // detach from previous bus
+  if (this._currentBus) {
+    this._currentBus.detach(this);
+    this._currentBus = null;
   }
 
+  if (!window.buses) return;
 
+  // if "off", don't attach anywhere
+  if (this.group === "off") return;
 
+  const bus = window.buses[this.group];
+  if (!bus) return;
 
-
-  buildAudioGraph() {
-  console.log(`buildAudioGraph(${this.id}) engine=${this.engineSelect.value}`);
-
-  if (!window.audioCtx || !window.makeAnalyser || !window.makeVoice) return;
-
-  // read engine
-  this.engine = this.engineSelect ? this.engineSelect.value : "sinOsc";
-
-  // wipe old nodes
-  if (this.voice && this.voice.stop) try { this.voice.stop(); } catch(e){}
-  this.voice = null;
-
-  if (this.fileSource) try { this.fileSource.stop(); } catch(e){}
-  this.fileSource = null;
-
-  if (this.analyser) this.analyser.disconnect();
-  if (this.gain) this.gain.disconnect();
-
-  // rebuild analyser + gain
-  this.analyser = makeAnalyser();
-  this.gain = audioCtx.createGain();
-  this.gain.gain.value = this.show ? 1 : 0;
-
-  // FILE ENGINE FIRST (no makeVoice!)
- if (this.engine === "file") {
-  console.log(`Track ${this.id}: FILE ENGINE selected`);
-    if (!this.fileBuffer) {
-      console.log(`Track ${this.id}: NO FILE LOADED, skipping fileSource`);
-      // Don't abort the whole graph. Just skip file node creation.
-      this.fileSource = null;
-    } else {
-      console.log(`Track ${this.id}: building fileSource`);
-      const src = audioCtx.createBufferSource();
-      src.playbackRate.setValueAtTime(
-      parseFloat(this.pitchSlider.value),
-      audioCtx.currentTime
-      );
-      src.buffer = this.fileBuffer;
-      src.loop = true;
-      src.connect(this.analyser).connect(this.gain);
-      this.fileSource = src;
-    }
-    this.gain.connect(audioCtx.destination);
-    return;
-}
-
-console.log(`Track ${this.id}: building oscillator voice`);
-  // OSC / ADDITIVE ENGINES
-  const f0 = this.freqSlider ? parseFloat(this.freqSlider.value) || 220 : 220;
-
-  const opts = {
-    B: this.BSlider ? parseFloat(this.BSlider.value) : 0,
-    pos: this.posSlider ? parseFloat(this.posSlider.value) : 0.2,
-    decay: this.decaySlider ? parseFloat(this.decaySlider.value) : 2,
-    brightness: this.brightSlider ? parseFloat(this.brightSlider.value) : 0.5,
-  };
-
-  const v = makeVoice(this.engine, f0, opts);
-  this.voice = v;
-
-  v.out.connect(this.analyser).connect(this.gain);
-  this.gain.connect(audioCtx.destination);
+  bus.attach(this);
+  this._currentBus = bus;
 }
 
 
-  // rebuild audio graph (e.g. on engine change)
-  rebuildVoice() {
-    if (this.analyser) this.analyser.disconnect();
-    if (this.gain) this.gain.disconnect();
-    if (this.voice && this.voice.stop) this.voice.stop();
-    this.buildAudioGraph();
-  }
+_wireUI() {
+
+  if (this.groupSelect) {
+    // Apply initial state (in case HTML default is Off)
+    this.group = this.groupSelect.value;
+    this.show = (this.group !== "off");
+    if (this.gain) this.gain.gain.value = this.show ? 1 : 0;
+    this._applyGroupRouting();
 
 
-
-  start() {
-    console.log(`Track ${this.id}.start(), engine=${this.engine}`);
-  if (this.engine === "file") {
-    console.log(" -> file engine start", this.fileSource);
-      if (this.fileSource) {
-        console.log(" -> osc engine start", this.voice);
-          try { this.fileSource.start(); } catch(e) {}
+    this.groupSelect.addEventListener("change", () => {
+      this.group = this.groupSelect.value;
+      this.show = (this.group !== "off");
+      
+      if (this.gain) {
+        this.gain.gain.setValueAtTime(this.show ? 1 : 0, window.audioCtx.currentTime);
       }
-      return;
-  }
-
-  // oscillator engines:
-  if (this.voice && this.voice.start) {
-      this.voice.start();
+      this._applyGroupRouting();
+    });
   }
 }
+/*
+creates buffer
+*/
+buildAudioGraph() {
+
+  if (!this.fileBuffer) return; 
+
+  //cleans up any previous source if it exists (if loading new file onto track, replacing old one)
+  if (this.fileSource) {
+    try { this.fileSource.stop(); } catch(e){}
+    try { this.fileSource.disconnect(); } catch(e){}
+  }
+
+  const src = window.audioCtx.createBufferSource(); //creates buffer source node (tape player basically)
+  src.buffer = this.fileBuffer; //put tape in tape player
+  src.loop = false;
+
+  // plug tape players output into the analyser input
+  //chain is AudioBufferSourceNode -> AnalyserNode -> GainNode -> Destination
+  // also:   AudioBufferSourceNode -> AnalyserNode -> GroupBus GainNode -> GroupBus AnalyserNode
+  src.connect(this.gain);
+
+  // we don't connect the source directly to destination because we want to be able to control the gain 
+  // (for muting when switching groups) or pitch change or whatever.
+  this.fileSource = src;
+}
+
+
+start() {
+  if (!this.fileSource && this.fileBuffer) this.buildAudioGraph();
+  if (!this.fileSource) return;
+
+  try { this.fileSource.start(); } catch (e) {}
+}
+
+
+
 
 stop() {
-  if (this.engine === "file") {
-      if (this.fileSource) {
-          try { this.fileSource.stop(); } catch(e){}
-      }
-      this.fileSource = null;
-      return;
+  if (this.fileSource) {
+    try { this.fileSource.stop(); } catch (e) {}
+    try { this.fileSource.disconnect(); } catch (e) {}
   }
-
-  if (this.voice && this.voice.stop) {
-      this.voice.stop();
-  }
-  this.voice = null; 
+  this.fileSource = null;
 }
 
+
+/*
+loads file from input, turns it into an audio node then 
+kicks off the draw loop if not started already
+*/
 
 async loadFile() {
-  const file = this.fileInput.files[0];
+  const file = this.fileInput.files[0]; // get the selected file from input
   if (!file) return;
 
-  const arrayBuf = await file.arrayBuffer();
-  this.fileBuffer = await audioCtx.decodeAudioData(arrayBuf);
+  const arrayBuf = await file.arrayBuffer(); // read file into arraybuffer
+  this.fileBuffer = await window.audioCtx.decodeAudioData(arrayBuf); // turn arraybuffer (raw bytes) into AudioBuffer
 
-  console.log("Loaded file for track", this.id);
+  this.buildAudioGraph(); // creates audio node needed to play/analyse file
 
-  // rebuild graph so analyser exists (and fileSource is ready if engine=file)
-  this.buildAudioGraph();
+  await window.audioCtx.resume(); //browsers block audioplayback until user interaction, so resume just in case
 
-  // --- STATIC WHOLE-FILE SPECTRUM ---
-  // Requires you to include static-spectrum.js which defines window.StaticSpectrum.compute
-  try {
-    const fftSize = this.analyser ? this.analyser.fftSize : 2048;
-    const hopSize = fftSize / 2;
+  if (!window.vizStarted) { //first time any track loads a file, kicks off draw loop (in viz.js)
+    window.vizStarted = true; 
+    draw(); 
+  }
 
-    this.staticBins = await StaticSpectrum.compute(this.fileBuffer, {
-      fftSize,
-      hopSize
-    });
-
-    console.log(`Static spectrum computed for track ${this.id}`, this.staticBins.length);
-  } catch (e) {
-    console.warn("Static spectrum compute failed:", e);
-    this.staticBins = null;
+  //recompute static spectrum if bus selected and file changed
+  if (this._currentBus) {
+  this._currentBus.computeStaticSpectrum().catch(console.warn);
   }
 }
 
 
+_debounceCropRecompute() {
+  clearTimeout(this._cropDebounce);
+  this._cropDebounce = setTimeout(() => {
+    if (this._currentBus) {
+      this._currentBus.computeStaticSpectrum().catch(console.warn);
+    }
+  }, 150);
+}
+
+getCropSeconds() {
+  if (!this.fileBuffer) return { offset: 0, duration: 0 };
+  const dur = this.fileBuffer.duration;
+  const offset = this.cropStart * dur;
+  const duration = (this.cropEnd - this.cropStart) * dur;
+  return { offset, duration };
+}
+
+getCropSamples() {
+  if (!this.fileBuffer) return { startSample: 0, endSample: 0 };
+  const len = this.fileBuffer.length;
+  const startSample = Math.round(this.cropStart * len);
+  const endSample = Math.round(this.cropEnd * len);
+  return { startSample, endSample };
+}
 
 
-
-
-// audition an interval of given size (in cents) from current file buffer (viz2click)
-auditionInterval(cents) {
+previewPlay() {
   if (!this.fileBuffer) return;
 
-  // Make sure audio can start (in case click happens before Start button)
-  if (audioCtx.state !== "running") audioCtx.resume();
+  this.previewStop();
 
-  // --- Stop any currently playing audition pair ---
-  this.stopAudition();
+  const btn = document.getElementById('previewBtn' + this.id);
 
-  const when = audioCtx.currentTime; // immediate
-  const ratio = Math.pow(2, cents / 1200);
-
-  // Helper to create + start one source at a given playbackRate
-  const makeSrc = (rate) => {
-    const src = audioCtx.createBufferSource();
+  const doPlay = () => {
+    const src = window.audioCtx.createBufferSource();
     src.buffer = this.fileBuffer;
     src.loop = false;
-    src.playbackRate.setValueAtTime(rate, when);
 
-    // Route: straight to speakers (cleanest for "audition")
-    // If you want it to show up in viz1/viz2, route via analyser/gain instead:
-    // src.connect(this.analyser).connect(this.gain);
-    src.connect(audioCtx.destination);
+    const { offset, duration } = this.getCropSeconds();
+    src.connect(this.gain);
+    src.start(0, offset, duration);
+    this._previewSrc = src;
 
-    // Clean up when it ends
+    if (btn) { btn.textContent = '⏹ Stop'; btn.classList.add('previewing'); }
+
     src.onended = () => {
-      try { src.disconnect(); } catch (e) {}
-      // remove from active list if still present
-      if (this._auditionSources) {
-        this._auditionSources = this._auditionSources.filter(s => s !== src);
-        if (this._auditionSources.length === 0) this._auditionSources = null;
-      }
+      this._previewSrc = null;
+      if (btn) { btn.textContent = '▶ Preview'; btn.classList.remove('previewing'); }
     };
-
-    src.start(when);
-    return src;
   };
 
-  const root = makeSrc(1.0);
-  const shifted = makeSrc(ratio);
-
-  // Keep references so we can stop them on the next click
-  this._auditionSources = [root, shifted];
-}
-
-stopAudition() {
-  if (!this._auditionSources) return;
-
-  for (const src of this._auditionSources) {
-    try { src.onended = null; } catch (e) {}
-    try { src.stop(); } catch (e) {}
-    try { src.disconnect(); } catch (e) {}
+  if (window.audioCtx.state === 'running') {
+    doPlay();
+  } else {
+    window.audioCtx.resume().then(doPlay);
   }
+}
 
-  this._auditionSources = null;
+previewStop() {
+  if (this._previewSrc) {
+    try { this._previewSrc.stop(); } catch (e) {}
+    this._previewSrc = null;
+  }
+  const btn = document.getElementById('previewBtn' + this.id);
+  if (btn) { btn.textContent = '▶ Preview'; btn.classList.remove('previewing'); }
 }
 
 
 
+
+// creates one shot audition source
+createAuditionSource(rate, when) {
+  if (!this.fileBuffer) return null;
+
+  const src = window.audioCtx.createBufferSource();
+  src.buffer = this.fileBuffer;
+  src.loop = false;
+  src.playbackRate.setValueAtTime(rate, when);
+
+  const { offset, duration } = this.getCropSeconds();
+
+  // Direct to destination ensures the audition sounds don't 
+  // mess with the "Live" analyser data used for peaks.
+  src.connect(this.gain);
+  
+  src.start(when, offset, duration);
+  return src;
+}
 }

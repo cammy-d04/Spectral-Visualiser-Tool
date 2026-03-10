@@ -2,9 +2,8 @@
 // Whole-file static spectrum (Welch average) with Blackman–Harris window.
 // Outputs Uint8Array bins (0..255) length = fftSize/2 to mimic getByteFrequencyData().
 //
-// Usage:
-//   const bins = await StaticSpectrum.compute(audioBuffer, { fftSize: 2048, hopSize: 1024 });
-//   track.staticBins = bins;
+// given an audio buffer, computes a single spectrum representing the whole file.
+//
 
 (function () {
   "use strict";
@@ -139,7 +138,7 @@
       frames++;
     }
 
-    if (frames === 0) return new Uint8Array(half);
+    if (frames === 0) return { bytes: new Uint8Array(half), raw: new Float32Array(half) };
 
     // average + convert to magnitude
     const mag = new Float32Array(half);
@@ -148,7 +147,7 @@
       mag[k] = Math.sqrt(accPow[k] * invFrames);
     }
 
-    return normaliseToByteBins(mag);
+    return { bytes: normaliseToByteBins(mag), raw: mag };
   }
 
   window.StaticSpectrum = { compute };

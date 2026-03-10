@@ -1,0 +1,581 @@
+<!doctype html>
+
+<!---UI skeleton of project-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Consonance and Dissonance Visualisation</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: #fcc06c;
+    color: #000000;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #layout {
+  display: flex;
+  width: 100%;
+  max-width: 1500px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 300px;
+  flex-shrink: 0;
+  background: #8b8b8a;
+  border-right: 4px solid #5f5f5f;
+  border-left: 10px solid #8b8b8a;
+  border-top: 10px solid #8b8b8a;
+  border-bottom: 10px solid #8b8b8a;
+
+   /* scrollable stuff */
+  height: calc(100vh - 80px); /* adjust if header is taller/shorter */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px; /* stops content hiding under scrollbar */
+}
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0; /* stops overflow issues */
+}
+
+#maincontrols {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;          /* wraps nicely on smaller widths */
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  background: #c7c7c7;
+  border: 1px solid #373737;
+  border-radius: 8px;
+}
+
+#visualisations {
+  flex: 1;
+  min-width: 0;
+}
+
+#vizRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+
+
+
+#tuningPanel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+  h1 {
+    font-size: 1.1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+    max-width: 1100px;
+    width: 100%;
+  }
+
+
+  .previewBtn {
+  align-self: flex-start;
+  padding: 3px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #e8e8e8;
+  margin: 2px 0 4px 0;
+}
+.previewBtn.previewing {
+  background: #ffd0d0;
+  border-color: rgb(0, 133, 9);
+  color: rgb(117, 180, 1);
+}
+  .controls {
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-start;
+  }
+
+  canvas {
+    background: #fff;
+    width: 100%;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+  }
+
+  #viz {
+    height: 35vh;
+  }
+  #viz2 {
+    height: 35vh;
+  }
+  #auditionCents {
+  width: 100%;
+}
+
+  
+
+  button,
+  input,
+  select {
+    margin: 0.5em;
+    font-size: 14px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #555;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  input[type="range"] {
+    width: 240px;
+  }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 260px;
+    border: 1px solid #373737;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #c7c7c7;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  label.small {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  #pianoControlsA {
+    border-top: 1px solid #ddd;
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+
+  .note {
+    font-size:12px;
+    color:#666;
+    line-height:1.3;
+    max-width:240px;
+    margin-top:-4px;
+    margin-bottom:4px;
+  }
+</style>
+</head>
+<body>
+<h1>Harmonics / Spectra Visualisation</h1>
+
+<div id="layout">
+
+  <div id="sidebar">
+
+    <div class="col">
+      <div class="engineTitle">
+        <span class="engineName">Track A</span>
+      </div>
+
+      <label>Load file:
+        <input type="file" id="fileInputA" accept="audio/*">
+      </label>
+
+      <label>File Pitch:
+        <input id="filePitchA" type="range" min="0.25" max="4" value="1" step="0.01">
+      </label>
+
+      <label class="small">Sample Start (%): <span id="cropStartValA">0.00</span>
+        <input id="cropStartA" type="range" min="0" max="1" value="0" step="0.01">
+      </label>
+
+      <label class="small">Sample End (%): <span id="cropEndValA">1.00</span>
+        <input id="cropEndA" type="range" min="0" max="1" value="1" step="0.01">
+      </label>
+
+      <label>Volume:
+        <input id="volA" type="range" min="0" max="1" value="1" step="0.01">
+      </label>
+
+    <label class="small">
+      Group:
+      <select id="showA">
+        <option value="off" selected>Off</option>
+        <option value="context">Context</option>
+        <option value="complement">Complement</option>
+      </select>
+    </label>
+
+    <button id="previewBtnA" class="previewBtn"
+      onclick="{ const t=tracks.find(t=>t.id==='A'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+    </button>
+
+    </div>
+
+
+    <div class="col">
+      <div class="engineTitle">
+        <span class="engineName">Track B</span>
+      </div>
+
+      <label>Load file:
+        <input type="file" id="fileInputB" accept="audio/*">
+      </label>
+
+      <label>File Pitch:
+        <input id="filePitchB" type="range" min="0.25" max="4" value="1" step="0.01">
+      </label>
+
+        <label class="small">Sample Start (%): <span id="cropStartValB">0.00</span>
+          <input id="cropStartB" type="range" min="0" max="1" value="0" step="0.01">
+        </label>
+
+        <label class="small">Sample End (%): <span id="cropEndValB">1.00</span>
+          <input id="cropEndB" type="range" min="0" max="1" value="1" step="0.01">
+        </label>
+
+      <label>Volume:
+        <input id="volB" type="range" min="0" max="1" value="1" step="0.01">
+      </label>
+
+    <label class="small">
+      Group:
+      <select id="showB">
+        <option value="off" selected>Off</option>
+        <option value="context">Context</option>
+        <option value="complement">Complement</option>
+      </select>
+    </label>
+
+    <button id="previewBtnB" class="previewBtn"
+      onclick="{ const t=tracks.find(t=>t.id==='B'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+    </button>
+
+    </div>
+
+
+    <div class="col">
+      <div class="engineTitle">
+        <span class="engineName">Track C</span>
+      </div>
+
+      <label>Load file:
+        <input type="file" id="fileInputC" accept="audio/*">
+      </label>
+
+      <label>File Pitch:
+        <input id="filePitchC" type="range" min="0.25" max="4" value="1" step="0.01">
+      </label>
+     
+      <label class="small">Sample Start (%): <span id="cropStartValC">0.00</span>
+        <input id="cropStartC" type="range" min="0" max="1" value="0" step="0.01">
+      </label>
+
+        <label class="small">Sample End (%): <span id="cropEndValC">1.00</span>
+          <input id="cropEndC" type="range" min="0" max="1" value="1" step="0.01">
+        </label>
+
+
+      <label>Volume:
+        <input id="volC" type="range" min="0" max="1" value="1" step="0.01">
+      </label>
+      
+      <label class="small">
+      Group:
+      <select id="showC">
+        <option value="off" selected>Off</option>
+        <option value="context">Context</option>
+        <option value="complement">Complement</option>
+      </select>
+    </label>
+
+    <button id="previewBtnC" class="previewBtn"
+      onclick="{ const t=tracks.find(t=>t.id==='C'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+    </button>
+    </div>
+
+
+    <div class="col">
+      <div class="engineTitle">
+        <span class="engineName">Track D</span>
+      </div>
+
+      <label>Load file:
+        <input type="file" id="fileInputD" accept="audio/*">
+      </label>
+
+      <label>File Pitch:
+        <input id="filePitchD" type="range" min="0.25" max="4" value="1" step="0.01">
+      </label>
+
+        <label class="small">Sample Start (%): <span id="cropStartValD">0.00</span>
+          <input id="cropStartD" type="range" min="0" max="1" value="0" step="0.01">
+        </label>
+
+        <label class="small">Sample End (%): <span id="cropEndValD">1.00</span>
+          <input id="cropEndD" type="range" min="0" max="1" value="1" step="0.01">
+        </label>
+
+      <label>Volume:
+        <input id="volD" type="range" min="0" max="1" value="1" step="0.01">  
+      </label>
+
+      <label class="small">
+        Group:
+        <select id="showD">
+          <option value="off" selected>Off</option>
+          <option value="context">Context</option>
+          <option value="complement">Complement</option>
+        </select>
+      </label>
+
+      <button id="previewBtnD" class="previewBtn"
+        onclick="{ const t=tracks.find(t=>t.id==='D'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+      </button>
+    </div>
+
+
+    <div class="col">
+      <div class="engineTitle">
+        <span class="engineName">Track E</span>
+      </div>
+
+      <label>Load file:
+        <input type="file" id="fileInputE" accept="audio/*">
+      </label>
+
+      <label>File Pitch:
+        <input id="filePitchE" type="range" min="0.25" max="4" value="1" step="0.01">
+      </label>
+
+        <label class="small">Sample Start (%): <span id="cropStartValE">0.00</span>
+            <input id="cropStartE" type="range" min="0" max="1" value="0" step="0.01">
+          </label>
+  
+          <label class="small">Sample End (%): <span id="cropEndValE">1.00</span>
+            <input id="cropEndE" type="range" min="0" max="1" value="1" step="0.01">
+          </label>
+
+      <label>Volume:
+        <input id="volE" type="range" min="0" max="1" value="1" step="0.01">
+      </label>
+
+      <label class="small">
+        Group:
+        <select id="showE">
+          <option value="off" selected>Off</option>
+          <option value="context">Context</option>
+          <option value="complement">Complement</option>
+        </select>
+      </label>
+      <button id="previewBtnE" class="previewBtn"
+        onclick="{ const t=tracks.find(t=>t.id==='E'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+      </button>
+
+    </div>
+
+    <div class="col">
+      <div class="engineTitle">
+        <span class="engineName">Track F</span>
+      </div>
+
+      <label>Load file:
+        <input type="file" id="fileInputF" accept="audio/*">
+      </label>
+
+      <label>File Pitch:
+        <input id="filePitchF" type="range" min="0.25" max="4" value="1" step="0.01">
+      </label>
+
+        <label class="small">Sample Start (%): <span id="cropStartValF">0.00</span>
+            <input id="cropStartF" type="range" min="0" max="1" value="0" step="0.01">
+          </label>
+  
+          <label class="small">Sample End (%): <span id="cropEndValF">1.00</span>
+            <input id="cropEndF" type="range" min="0" max="1" value="1" step="0.01">
+          </label>
+
+      <label>Volume:
+        <input id="volF" type="range" min="0" max="1" value="1" step="0.01">  
+      </label>
+
+      <label class="small">
+        Group:
+        <select id="showF">
+          <option value="off" selected>Off</option>
+          <option value="context">Context</option>
+          <option value="complement">Complement</option>
+        </select>
+      </label>
+
+      <button id="previewBtnF" class="previewBtn" onclick="{ const t=tracks.find(t=>t.id==='F'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+      </button>
+
+  </div>
+
+</div>
+  
+
+  <div id="main">
+    <div id="vizRow">
+
+      <div id="visualisations">
+        <canvas id="viz"></canvas>
+        <canvas id="viz2"></canvas>
+
+        <div class="col" style="min-width:320px;">
+          <div style="font-weight:600;margin-bottom:1px;">Interval audition</div>
+
+          <label class="small">
+            Cents: <span id="auditionCentsVal">0</span>
+            <input id="auditionCents" type="range" min="0" max="1200" value="0" step="1">
+          </label>
+
+          <button id="auditionPlay">Play</button>
+          
+          <input type="checkbox" id="complementOR">
+            <label for="complementOR">Show complement/audition spectrum</label>
+        </div>
+      </div>
+
+
+      <div id="tuningPanel">
+        <div class="col" style="min-width:320px;">
+          <div style="font-weight:600;margin-bottom:6px;">Dissonance meter</div>
+          <div id="dissonanceMeter" style="
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #aaa;
+          ">
+            <div id="dissonanceMeterFill" style="
+              height: 100%;
+              width: 0%;
+              background: green;
+              transition: width 0.05s, background 0.05s;
+            "></div>
+          </div>
+          <div style="font-size:12px;color:#444;margin-top:2px;">
+            Dissonance: <span id="dissonanceMeterVal">—</span>
+          </div>
+        </div>
+
+        <div class="col" style="min-width:320px;">
+          <div style="font-weight:600;margin-bottom:6px;">Main Controls</div>
+
+          <label>
+            X-Zoom:
+            <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
+          </label>
+        </div>
+
+
+        <div class="col" style="min-width:320px;">
+          <div style="font-weight:600;margin-bottom:6px;">Peak picker</div>
+
+          <label class="small">
+            Threshold (fraction of max bin): <span id="threshFracVal">0.20</span>
+            <input id="threshFrac" type="range" min="0.05" max="0.60" value="0.20" step="0.01">
+          </label>
+
+          <label class="small">
+            Max peaks picked: <span id="maxPeaksVal">7</span>
+            <input id="maxPeaksPicked" type="range" min="1" max="20" value="7" step="1">
+          </label>
+
+          <label class="small">
+            Min separation (Hz): <span id="minSepHzVal">30</span>
+            <input id="minSepHz" type="range" min="5" max="120" value="30" step="1">
+          </label>
+
+          <label class="small">
+            Peak fMin (Hz): <span id="peakFMinVal">60</span>
+            <input id="peakFMin" type="range" min="20" max="400" value="60" step="1">
+          </label>
+        </div>
+
+
+        <div class="col" style="min-width:320px;">
+          <div style="font-weight:600;margin-bottom:6px;">Dissonance curve</div>
+
+          <label class="small">
+            Amp compress: <span id="ampCompressVal">0.50</span>
+            <input id="ampCompress" type="range" min="0.20" max="1.00" value="0.50" step="0.01">
+          </label>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+<script src="tracks.js"></script>
+<script src="group-bus.js"></script>
+<script src="static-spectrum.js"></script>
+<script src="viz.js"></script>
+<script src="viz2.js"></script>
+<script src="main.js"></script>
+
+</body>
+</html>
+
