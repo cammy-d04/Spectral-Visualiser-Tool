@@ -60,7 +60,9 @@ class GroupBus {
 
     // Longest track determines render length
     for (const t of sources) {
-        if (t.fileBuffer.length > maxSamples) maxSamples = t.fileBuffer.length;
+        const { startSample, endSample } = t.getCropSamples();
+        const cropped = endSample - startSample;
+        if (cropped > maxSamples) maxSamples = cropped;
     }
 
     // make offline mono audio context for rendering the mix
@@ -75,7 +77,8 @@ class GroupBus {
 
       src.connect(g);
       g.connect(offline.destination);
-      src.start(0);
+      const { offset, duration } = t.getCropSeconds();
+      src.start(0, offset, duration);
     }
 
     return await offline.startRendering();

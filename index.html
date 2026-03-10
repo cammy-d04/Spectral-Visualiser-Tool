@@ -106,6 +106,22 @@
     width: 100%;
   }
 
+
+  .previewBtn {
+  align-self: flex-start;
+  padding: 3px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #e8e8e8;
+  margin: 2px 0 4px 0;
+}
+.previewBtn.previewing {
+  background: #ffd0d0;
+  border-color: rgb(0, 133, 9);
+  color: rgb(117, 180, 1);
+}
   .controls {
     display:flex;
     gap:12px;
@@ -154,13 +170,6 @@
     border-radius: 50%;
     display: inline-block;
   }
-  
-  .dot.a { background: red; opacity: 0.5; }
-  .dot.b { background: deepskyblue; opacity: 0.5; }
-  .dot.c { background: seagreen; opacity: 0.5; }
-  .dot.d { background: orange; opacity: 0.5; }
-  .dot.e { background: purple; opacity: 0.5; }
-  .dot.f { background: rgb(218, 32, 196); opacity: 0.5; }
 
   input[type="range"] {
     width: 240px;
@@ -215,19 +224,26 @@
 
     <div class="col">
       <div class="engineTitle">
-        <span class="dot a"></span>
-        <span class="engineName">Engine A</span>
+        <span class="engineName">Track A</span>
       </div>
 
       <label>Load file:
         <input type="file" id="fileInputA" accept="audio/*">
       </label>
 
-      <label>File Pitch A:
+      <label>File Pitch:
         <input id="filePitchA" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label>Volume A:
+      <label class="small">Sample Start (%): <span id="cropStartValA">0.00</span>
+        <input id="cropStartA" type="range" min="0" max="1" value="0" step="0.01">
+      </label>
+
+      <label class="small">Sample End (%): <span id="cropEndValA">1.00</span>
+        <input id="cropEndA" type="range" min="0" max="1" value="1" step="0.01">
+      </label>
+
+      <label>Volume:
         <input id="volA" type="range" min="0" max="1" value="1" step="0.01">
       </label>
 
@@ -240,24 +256,35 @@
       </select>
     </label>
 
+    <button id="previewBtnA" class="previewBtn"
+      onclick="{ const t=tracks.find(t=>t.id==='A'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+    </button>
+
     </div>
 
 
     <div class="col">
       <div class="engineTitle">
-        <span class="dot b"></span>
-        <span class="engineName">Engine B</span>
+        <span class="engineName">Track B</span>
       </div>
 
       <label>Load file:
         <input type="file" id="fileInputB" accept="audio/*">
       </label>
 
-      <label>File Pitch B:
+      <label>File Pitch:
         <input id="filePitchB" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label>Volume B:
+        <label class="small">Sample Start (%): <span id="cropStartValB">0.00</span>
+          <input id="cropStartB" type="range" min="0" max="1" value="0" step="0.01">
+        </label>
+
+        <label class="small">Sample End (%): <span id="cropEndValB">1.00</span>
+          <input id="cropEndB" type="range" min="0" max="1" value="1" step="0.01">
+        </label>
+
+      <label>Volume:
         <input id="volB" type="range" min="0" max="1" value="1" step="0.01">
       </label>
 
@@ -269,26 +296,41 @@
         <option value="complement">Complement</option>
       </select>
     </label>
+
+    <button id="previewBtnB" class="previewBtn"
+      onclick="{ const t=tracks.find(t=>t.id==='B'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+    </button>
+
     </div>
 
 
     <div class="col">
       <div class="engineTitle">
-        <span class="dot c"></span>
-        <span class="engineName">Engine C</span>
+        <span class="engineName">Track C</span>
       </div>
 
       <label>Load file:
         <input type="file" id="fileInputC" accept="audio/*">
       </label>
 
-      <label>File Pitch C:
+      <label>File Pitch:
         <input id="filePitchC" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
+     
+      <label class="small">Sample Start (%): <span id="cropStartValC">0.00</span>
+        <input id="cropStartC" type="range" min="0" max="1" value="0" step="0.01">
+      </label>
 
-      <label>Volume C:
+        <label class="small">Sample End (%): <span id="cropEndValC">1.00</span>
+          <input id="cropEndC" type="range" min="0" max="1" value="1" step="0.01">
+        </label>
+
+
+      <label>Volume:
         <input id="volC" type="range" min="0" max="1" value="1" step="0.01">
       </label>
+      
+      <label class="small">
       Group:
       <select id="showC">
         <option value="off" selected>Off</option>
@@ -296,24 +338,35 @@
         <option value="complement">Complement</option>
       </select>
     </label>
+
+    <button id="previewBtnC" class="previewBtn"
+      onclick="{ const t=tracks.find(t=>t.id==='C'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+    </button>
     </div>
 
 
     <div class="col">
       <div class="engineTitle">
-        <span class="dot d"></span>
-        <span class="engineName">Engine D</span>
+        <span class="engineName">Track D</span>
       </div>
 
       <label>Load file:
         <input type="file" id="fileInputD" accept="audio/*">
       </label>
 
-      <label>File Pitch D:
+      <label>File Pitch:
         <input id="filePitchD" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
-      
-       <label>Volume D:
+
+        <label class="small">Sample Start (%): <span id="cropStartValD">0.00</span>
+          <input id="cropStartD" type="range" min="0" max="1" value="0" step="0.01">
+        </label>
+
+        <label class="small">Sample End (%): <span id="cropEndValD">1.00</span>
+          <input id="cropEndD" type="range" min="0" max="1" value="1" step="0.01">
+        </label>
+
+      <label>Volume:
         <input id="volD" type="range" min="0" max="1" value="1" step="0.01">  
       </label>
 
@@ -325,24 +378,35 @@
           <option value="complement">Complement</option>
         </select>
       </label>
+
+      <button id="previewBtnD" class="previewBtn"
+        onclick="{ const t=tracks.find(t=>t.id==='D'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+      </button>
     </div>
 
 
     <div class="col">
       <div class="engineTitle">
-        <span class="dot e"></span>
-        <span class="engineName">Engine E</span>
+        <span class="engineName">Track E</span>
       </div>
 
       <label>Load file:
         <input type="file" id="fileInputE" accept="audio/*">
       </label>
 
-      <label>File Pitch E:
+      <label>File Pitch:
         <input id="filePitchE" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label>Volume E:
+        <label class="small">Sample Start (%): <span id="cropStartValE">0.00</span>
+            <input id="cropStartE" type="range" min="0" max="1" value="0" step="0.01">
+          </label>
+  
+          <label class="small">Sample End (%): <span id="cropEndValE">1.00</span>
+            <input id="cropEndE" type="range" min="0" max="1" value="1" step="0.01">
+          </label>
+
+      <label>Volume:
         <input id="volE" type="range" min="0" max="1" value="1" step="0.01">
       </label>
 
@@ -354,23 +418,34 @@
           <option value="complement">Complement</option>
         </select>
       </label>
+      <button id="previewBtnE" class="previewBtn"
+        onclick="{ const t=tracks.find(t=>t.id==='E'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+      </button>
+
     </div>
 
     <div class="col">
       <div class="engineTitle">
-        <span class="dot f"></span>
-        <span class="engineName">Engine F</span>
+        <span class="engineName">Track F</span>
       </div>
 
       <label>Load file:
         <input type="file" id="fileInputF" accept="audio/*">
       </label>
 
-      <label>File Pitch F:
+      <label>File Pitch:
         <input id="filePitchF" type="range" min="0.25" max="4" value="1" step="0.01">
       </label>
 
-      <label>Volume F:
+        <label class="small">Sample Start (%): <span id="cropStartValF">0.00</span>
+            <input id="cropStartF" type="range" min="0" max="1" value="0" step="0.01">
+          </label>
+  
+          <label class="small">Sample End (%): <span id="cropEndValF">1.00</span>
+            <input id="cropEndF" type="range" min="0" max="1" value="1" step="0.01">
+          </label>
+
+      <label>Volume:
         <input id="volF" type="range" min="0" max="1" value="1" step="0.01">  
       </label>
 
@@ -382,10 +457,14 @@
           <option value="complement">Complement</option>
         </select>
       </label>
-    </div>
+
+      <button id="previewBtnF" class="previewBtn" onclick="{ const t=tracks.find(t=>t.id==='F'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">▶ Preview
+      </button>
 
   </div>
 
+</div>
+  
 
   <div id="main">
     <div id="vizRow">

@@ -29,6 +29,9 @@ class Track {
     this.fileInput = document.getElementById("fileInput" + this.id); // the <input type="file"> assigned to this track in the html
     this.fileInput.addEventListener("change", () => this.loadFile());
 
+    // crop bounds as fractions 0..1 of file duration
+    this.cropStart = 0;
+    this.cropEnd = 1;
     
     this.volSlider = document.getElementById("vol" + this.id);
     this.volSlider.addEventListener("input", () => {
@@ -42,6 +45,33 @@ class Track {
         }
       }, 150);
     });
+
+    // crop sliders
+    this.cropStartSlider = document.getElementById("cropStart" + this.id);
+    this.cropEndSlider = document.getElementById("cropEnd" + this.id);
+    this.cropStartVal = document.getElementById("cropStartVal" + this.id);
+    this.cropEndVal = document.getElementById("cropEndVal" + this.id);
+
+    if (this.cropStartSlider) {
+      this.cropStartSlider.addEventListener("input", () => {
+        let v = parseFloat(this.cropStartSlider.value);
+        if (v >= this.cropEnd) v = this.cropEnd - 0.01;
+        this.cropStart = Math.max(0, v);
+        this.cropStartSlider.value = this.cropStart;
+        if (this.cropStartVal) this.cropStartVal.textContent = this.cropStart.toFixed(2);
+        this._debounceCropRecompute();
+      });
+    }
+    if (this.cropEndSlider) {
+      this.cropEndSlider.addEventListener("input", () => {
+        let v = parseFloat(this.cropEndSlider.value);
+        if (v <= this.cropStart) v = this.cropStart + 0.01;
+        this.cropEnd = Math.min(1, v);
+        this.cropEndSlider.value = this.cropEnd;
+        if (this.cropEndVal) this.cropEndVal.textContent = this.cropEnd.toFixed(2);
+        this._debounceCropRecompute();
+      });
+    }
 
 
     this._wireUI();
@@ -164,6 +194,72 @@ async loadFile() {
 }
 
 
+_debounceCropRecompute() {
+  clearTimeout(this._cropDebounce);
+  this._cropDebounce = setTimeout(() => {
+    if (this._currentBus) {
+      this._currentBus.computeStaticSpectrum().catch(console.warn);
+    }
+  }, 150);
+}
+
+getCropSeconds() {
+  if (!this.fileBuffer) return { offset: 0, duration: 0 };
+  const dur = this.fileBuffer.duration;
+  const offset = this.cropStart * dur;
+  const duration = (this.cropEnd - this.cropStart) * dur;
+  return { offset, duration };
+}
+
+getCropSamples() {
+  if (!this.fileBuffer) return { startSample: 0, endSample: 0 };
+  const len = this.fileBuffer.length;
+  const startSample = Math.round(this.cropStart * len);
+  const endSample = Math.round(this.cropEnd * len);
+  return { startSample, endSample };
+}
+
+
+previewPlay() {
+  if (!this.fileBuffer) return;
+
+  this.previewStop();
+
+  const btn = document.getElementById('previewBtn' + this.id);
+
+  const doPlay = () => {
+    const src = window.audioCtx.createBufferSource();
+    src.buffer = this.fileBuffer;
+    src.loop = false;
+
+    const { offset, duration } = this.getCropSeconds();
+    src.connect(this.gain);
+    src.start(0, offset, duration);
+    this._previewSrc = src;
+
+    if (btn) { btn.textContent = '⏹ Stop'; btn.classList.add('previewing'); }
+
+    src.onended = () => {
+      this._previewSrc = null;
+      if (btn) { btn.textContent = '▶ Preview'; btn.classList.remove('previewing'); }
+    };
+  };
+
+  if (window.audioCtx.state === 'running') {
+    doPlay();
+  } else {
+    window.audioCtx.resume().then(doPlay);
+  }
+}
+
+previewStop() {
+  if (this._previewSrc) {
+    try { this._previewSrc.stop(); } catch (e) {}
+    this._previewSrc = null;
+  }
+  const btn = document.getElementById('previewBtn' + this.id);
+  if (btn) { btn.textContent = '▶ Preview'; btn.classList.remove('previewing'); }
+}
 
 
 
@@ -177,11 +273,13 @@ createAuditionSource(rate, when) {
   src.loop = false;
   src.playbackRate.setValueAtTime(rate, when);
 
+  const { offset, duration } = this.getCropSeconds();
+
   // Direct to destination ensures the audition sounds don't 
   // mess with the "Live" analyser data used for peaks.
   src.connect(this.gain);
   
-  src.start(when);
+  src.start(when, offset, duration);
   return src;
 }
 }
