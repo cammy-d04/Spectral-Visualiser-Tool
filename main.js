@@ -9,7 +9,7 @@
 //global audio context
 window.audioCtx = new AudioContext(); 
 
-
+ 
 
 //make analyser
 window.makeAnalyser = function makeAnalyser() { 
@@ -165,16 +165,4 @@ document.getElementById("auditionPlay").addEventListener("click", () => {
   }
 });
 
-
-
-
-//track select shit
-const v2sel = document.getElementById("v2trackselect");
-v2sel.addEventListener("change", () => {
-  // call the setter in sethares.js
-  setSelectedTrackById(v2sel.value);
-});
-
-// initialize it so it matches the dropdown’s current value
-setSelectedTrackById(v2sel.value);
 

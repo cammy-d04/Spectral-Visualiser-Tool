@@ -9,12 +9,13 @@ class Track {
     this.color = opts.color;     // (prob dont need)
 
     this.groupSelect = document.getElementById("show" + this.id);
-    this.group = this.groupSelect ? this.groupSelect.value : 'context';
+    this.group = this.groupSelect ? this.groupSelect.value : 'context'; 
     this.show = (this.group !== 'off');
+
 
     this.gain = window.audioCtx.createGain();
 
-    // Each track connects its *stable* output gain to one bus gain for analysis.
+    // Each track connects its output gain to one bus gain for analysis.
     this._currentBus = null;
 
     this.gain.gain.value = this.show ? 1 : 0;
@@ -26,25 +27,71 @@ class Track {
     //file loading stuff
     this.fileBuffer = null;      // decoded AudioBuffer
     this.fileSource = null;      // current AudioBufferSourceNode
-    this.fileInput = document.getElementById("fileInput" + this.id); // the <input type="file"> assigned to this track in the html
+
+    this.fileInput = document.getElementById("fileInput" + this.id); // get file
     this.fileInput.addEventListener("change", () => this.loadFile());
 
     // crop bounds as fractions 0..1 of file duration
+    // crop bounds as fractions 0..1 of file duration
     this.cropStart = 0;
     this.cropEnd = 1;
-    
-    this.volSlider = document.getElementById("vol" + this.id);
-    this.volSlider.addEventListener("input", () => {
-      const v = parseFloat(this.volSlider.value);
-      this.gain.gain.setValueAtTime(v, window.audioCtx.currentTime);
+    this.pitchRate = 1.0;
 
-      clearTimeout(this._volDebounce);
-      this._volDebounce = setTimeout(() => {
-        if (this._currentBus) {
-          this._currentBus.computeStaticSpectrum().catch(console.warn);
-        }
-      }, 150);
-    });
+
+
+    // pitch slider and vol slider
+    this.pitchValueLabel = document.getElementById("filePitchVal" + this.id);
+    this.volValueLabel = document.getElementById("volVal" + this.id);
+// pitch slider
+this.pitchSlider = document.getElementById("filePitch" + this.id);
+if (this.pitchSlider) {
+  // set initial visible value
+  if (this.pitchValueLabel) {
+    this.pitchValueLabel.textContent = Number(this.pitchSlider.value).toFixed(2);
+  }
+
+  this.pitchSlider.addEventListener("input", () => {
+    this.pitchRate = parseFloat(this.pitchSlider.value);
+
+    // update visible number
+    if (this.pitchValueLabel) {
+      this.pitchValueLabel.textContent = this.pitchRate.toFixed(2);
+    }
+
+    clearTimeout(this._pitchDebounce);
+    this._pitchDebounce = setTimeout(() => {
+      if (this._currentBus) {
+        this._currentBus.computeStaticSpectrum().catch(console.warn);
+      }
+    }, 150);
+  });
+}
+
+this.volSlider = document.getElementById("vol" + this.id);
+if (this.volSlider) {
+  // set initial visible value
+  if (this.volValueLabel) {
+    this.volValueLabel.textContent = Number(this.volSlider.value).toFixed(2);
+  }
+
+  this.volSlider.addEventListener("input", () => {
+    const v = parseFloat(this.volSlider.value);
+
+    // update visible number
+    if (this.volValueLabel) {
+      this.volValueLabel.textContent = v.toFixed(2);
+    }
+
+    this.gain.gain.setValueAtTime(v, window.audioCtx.currentTime);
+
+    clearTimeout(this._volDebounce);
+    this._volDebounce = setTimeout(() => {
+      if (this._currentBus) {
+        this._currentBus.computeStaticSpectrum().catch(console.warn);
+      }
+    }, 150);
+  });
+}
 
     // crop sliders
     this.cropStartSlider = document.getElementById("cropStart" + this.id);
@@ -73,35 +120,35 @@ class Track {
       });
     }
 
-
     this._wireUI();
   }
 
 
-   _applyGroupRouting() {
-  // detach from previous bus
-  if (this._currentBus) {
-    this._currentBus.detach(this);
-    this._currentBus = null;
+
+  _applyGroupRouting() {
+    // detach from previous bus
+    if (this. _currentBus) {
+      this._currentBus.detach(this);
+      this._currentBus = null;
+    }
+
+    if (!window.buses) return;
+
+    // if "off", don't attach anywhere
+    if (this.group === "off") return;
+
+    const bus = window.buses[this.group];
+    if (!bus) return;
+
+    bus.attach(this);
+    this._currentBus = bus;
   }
-
-  if (!window.buses) return;
-
-  // if "off", don't attach anywhere
-  if (this.group === "off") return;
-
-  const bus = window.buses[this.group];
-  if (!bus) return;
-
-  bus.attach(this);
-  this._currentBus = bus;
-}
 
 
 _wireUI() {
 
   if (this.groupSelect) {
-    // Apply initial state (in case HTML default is Off)
+    // Apply initial state
     this.group = this.groupSelect.value;
     this.show = (this.group !== "off");
     if (this.gain) this.gain.gain.value = this.show ? 1 : 0;
@@ -111,11 +158,11 @@ _wireUI() {
     this.groupSelect.addEventListener("change", () => {
       this.group = this.groupSelect.value;
       this.show = (this.group !== "off");
-      
       if (this.gain) {
         this.gain.gain.setValueAtTime(this.show ? 1 : 0, window.audioCtx.currentTime);
       }
       this._applyGroupRouting();
+      //this._currentBus.computeStaticSpectrum().catch(console.warn);
     });
   }
 }
@@ -188,7 +235,8 @@ async loadFile() {
   }
 
   //recompute static spectrum if bus selected and file changed
-  if (this._currentBus) {
+  if (this._currentBus) { 
+  console.log(`Bus ${this._currentBus.id} recomputing static spectrum due to file load on track ${this.id}`);
   this._currentBus.computeStaticSpectrum().catch(console.warn);
   }
 }
@@ -227,10 +275,11 @@ previewPlay() {
 
   const btn = document.getElementById('previewBtn' + this.id);
 
-  const doPlay = () => {
+ const doPlay = () => {
     const src = window.audioCtx.createBufferSource();
     src.buffer = this.fileBuffer;
     src.loop = false;
+    src.playbackRate.value = this.pitchRate || 1.0;
 
     const { offset, duration } = this.getCropSeconds();
     src.connect(this.gain);
@@ -271,9 +320,9 @@ createAuditionSource(rate, when) {
   const src = window.audioCtx.createBufferSource();
   src.buffer = this.fileBuffer;
   src.loop = false;
-  src.playbackRate.setValueAtTime(rate, when);
+  src.playbackRate.setValueAtTime(rate * (this.pitchRate || 1.0), when);
 
-  const { offset, duration } = this.getCropSeconds();
+  const {offset, duration} = this.getCropSeconds();
 
   // Direct to destination ensures the audition sounds don't 
   // mess with the "Live" analyser data used for peaks.

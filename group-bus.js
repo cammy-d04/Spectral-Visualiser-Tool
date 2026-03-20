@@ -38,6 +38,8 @@ class GroupBus {
     try { track.gain.disconnect(this.gain); } catch (e) {}
     this.tracks.delete(track);
     this.computeStaticSpectrum().catch(console.warn);
+
+
   }
 
   listTrackIds() {
@@ -46,31 +48,33 @@ class GroupBus {
 
 
 
-  async renderMixedBuffer() {
-    const sr = window.audioCtx.sampleRate; //get sample rate from audio context
+async renderMixedBuffer() {
+    const sr = window.audioCtx.sampleRate;
 
-    const sources = [...this.tracks]
-      .filter(t => t.fileBuffer);
+    const sources = [...this.tracks].filter(t => t.fileBuffer);//maybe remove filtering!!!!
 
     if (sources.length === 0) return null;
 
-
-    // figure out how long the mix should be, considering playbackRate changes
     let maxSamples = 0;
 
-    // Longest track determines render length
     for (const t of sources) {
         const { startSample, endSample } = t.getCropSamples();
         const cropped = endSample - startSample;
-        if (cropped > maxSamples) maxSamples = cropped;
+        const rate = t.pitchRate || 1.0;
+        const adjusted = Math.ceil(cropped / rate);
+        if (adjusted > maxSamples) maxSamples = adjusted;
     }
 
-    // make offline mono audio context for rendering the mix
+    if (maxSamples <= 0) return null;
+
     const offline = new OfflineAudioContext(1, maxSamples, sr);
 
    for (const t of sources) {
       const src = offline.createBufferSource();
       src.buffer = t.fileBuffer;
+
+      const rate = t.pitchRate || 1.0;
+      src.playbackRate.value = rate;
 
       const g = offline.createGain();
       g.gain.value = t.gain.gain.value;
@@ -114,7 +118,7 @@ class GroupBus {
 
 
   async computeStaticSpectrum() {
-  const mixed = await this.renderMixedBuffer();
+  const mixed = await this.renderMixedBuffer(); ////what is goin gon here????
   if (!mixed) {
     this.staticBins = null;
     return null;

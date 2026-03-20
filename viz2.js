@@ -365,37 +365,123 @@ else{
   //   { cents: 700,  label: "3/2" },
   //   { cents: 1200, label: "2/1" },
   // ];
-  
-    const INTERVAL_LINES = [ // intervals to be overlayed in cents with labels
-    { cents: 0,    label: "1/1" },
-    { cents: 316,  label: "6/5" },
-    { cents: 386,  label: "5/4" },
-    { cents: 500,  label: "4/3" },
-    { cents: 700,  label: "3/2" },
-    { cents: 1200, label: "2/1" },
-  ];
+
+
+// --- Tuning system interval overlays ---
+
+const TUNING_SYSTEMS = {
+  just: {
+    label: "Just Intonation",
+    color: "#0000006d",
+    intervals: [
+      { cents: 0,    label: "1/1" },
+      { cents: 112,  label: "16/15" },
+      { cents: 182,  label: "10/9" },
+      { cents: 204,  label: "9/8" },
+      { cents: 316,  label: "6/5" },
+      { cents: 386,  label: "5/4" },
+      { cents: 498,  label: "4/3" },
+      { cents: 590,  label: "45/32" },
+      { cents: 702,  label: "3/2" },
+      { cents: 814,  label: "8/5" },
+      { cents: 884,  label: "5/3" },
+      { cents: 969,  label: "7/4" },
+      { cents: 1018, label: "9/5" },
+      { cents: 1088, label: "15/8" },
+      { cents: 1200, label: "2/1" },
+    ]
+  },
+  pyth: {
+    label: "Pythagorean",
+    color: "#0000006d",
+    intervals: [
+      { cents: 0,    label: "P1" },
+      { cents: 90,   label: "m2" },
+      { cents: 204,  label: "M2" },
+      { cents: 294,  label: "m3" },
+      { cents: 408,  label: "M3" },
+      { cents: 498,  label: "P4" },
+      { cents: 612,  label: "A4" },
+      { cents: 702,  label: "P5" },
+      { cents: 792,  label: "m6" },
+      { cents: 906,  label: "M6" },
+      { cents: 996,  label: "m7" },
+      { cents: 1110, label: "M7" },
+      { cents: 1200, label: "P8" },
+    ]
+  },
+  "12tet": {
+    label: "12-TET",
+    color: "#0000006d",
+    intervals: Array.from({ length: 13 }, (_, i) => ({
+      cents: i * 100,
+      label: ["P1","m2","M2","m3","M3","P4","TT","P5","m6","M6","m7","M7","P8"][i]
+    }))
+  },
+    pelog: {
+    label: "Javanese Pelog",
+    color: "#0000006d",
+    intervals: [
+      { cents: 0,    label: "" },
+      { cents: 120,   label: "" },
+      { cents: 150,  label: "" },
+      { cents: 280,  label: "" },
+      { cents: 120,  label: "" },
+      { cents: 150,  label: "" },
+      { cents: 280,  label: "" },
+      { cents: 702,  label: "" },
+      { cents: 792,  label: "" },
+      { cents: 906,  label: "" },
+      { cents: 996,  label: "" },
+      { cents: 1110, label: "" },
+      { cents: 1200, label: "" },
+    ]
+    },
+    slendro: {
+      label: "Javanese Slendro",
+      color: "#0000006d",
+      intervals: [
+        { cents: 240,    label: "" },
+        { cents: 480,   label: "" },
+        { cents: 720,  label: "" },
+        { cents: 960,  label: "" },
+        { cents: 1200,  label: "" },
+      ]
+    },
+};
+
+const overlayMode = document.getElementById('intervalOverlay')?.value ?? 'just';
+
+let overlaysToDraw = [];
+if (overlayMode === 'none') {
+  overlaysToDraw = [];
+} else if (TUNING_SYSTEMS[overlayMode]) {
+  overlaysToDraw = [TUNING_SYSTEMS[overlayMode]];
+}
+
+for (let sysIdx = 0; sysIdx < overlaysToDraw.length; sysIdx++) {
+  const sys = overlaysToDraw[sysIdx];
+  const labelYOffset = overlaysToDraw.length > 1 ? sysIdx * 12 : 0;
 
   ctx2.save();
   ctx2.globalAlpha = 0.4;
-  ctx2.strokeStyle = "#0000006d";
-  ctx2.fillStyle = "#000";
+  ctx2.strokeStyle = sys.color;
+  ctx2.fillStyle = sys.color;
   ctx2.lineWidth = 1;
   ctx2.font = "10px sans-serif";
 
-  for (const interval of INTERVAL_LINES) {
+  for (const interval of sys.intervals) {
     const x = centsToXViz2(interval.cents);
 
-    // vertical line
     ctx2.beginPath();
     ctx2.moveTo(x, ys);
     ctx2.lineTo(x, ys - plotH);
     ctx2.stroke();
 
-
-    ctx2.fillText(interval.label, x + 2, ys - 6);
+    ctx2.fillText(interval.label, x + 2, ys - 6 + labelYOffset);
   }
   ctx2.restore();
-
+}
 
 
     // Slider audition line
