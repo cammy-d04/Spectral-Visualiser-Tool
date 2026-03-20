@@ -248,7 +248,7 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
     ctx2.stroke();
 
     if (i % 1 === 0) {
-      ctx2.fillText(Math.round(cents), x - 10, ys + 18);
+      ctx2.fillText(Math.round(cents), x - 10, ys + 16);
     }
   }
 
@@ -264,8 +264,19 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
     ctx2.lineTo(xs, y);
     ctx2.stroke();
 
-    ctx2.fillText(v.toFixed(1), 8, y + 4);
+    ctx2.fillText(v.toFixed(1), 20, y + 4);
   }
+
+
+  // Axis labels
+ctx2.fillStyle = '#333';
+ctx2.font = '12px sans-serif';
+ctx2.fillText('Interval (cents)', xs + plotW / 2 - 40, ys + 28);
+ctx2.save();
+ctx2.translate(12, ys / 2 + 30);
+ctx2.rotate(-Math.PI / 2);
+ctx2.fillText('Dissonance', 0, 0);
+ctx2.restore();
 }
 
 

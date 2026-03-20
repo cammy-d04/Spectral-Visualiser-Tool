@@ -20,6 +20,7 @@ class Track {
 
     this.gain.gain.value = this.show ? 1 : 0;
     this._applyGroupRouting();
+    this._updateBottomRowColor();
 
     //connect to gain
     this.gain.connect(window.audioCtx.destination);
@@ -99,26 +100,29 @@ if (this.volSlider) {
     this.cropStartVal = document.getElementById("cropStartVal" + this.id);
     this.cropEndVal = document.getElementById("cropEndVal" + this.id);
 
-    if (this.cropStartSlider) {
-      this.cropStartSlider.addEventListener("input", () => {
-        let v = parseFloat(this.cropStartSlider.value);
-        if (v >= this.cropEnd) v = this.cropEnd - 0.01;
-        this.cropStart = Math.max(0, v);
-        this.cropStartSlider.value = this.cropStart;
-        if (this.cropStartVal) this.cropStartVal.textContent = this.cropStart.toFixed(2);
-        this._debounceCropRecompute();
-      });
-    }
-    if (this.cropEndSlider) {
-      this.cropEndSlider.addEventListener("input", () => {
-        let v = parseFloat(this.cropEndSlider.value);
-        if (v <= this.cropStart) v = this.cropStart + 0.01;
-        this.cropEnd = Math.min(1, v);
-        this.cropEndSlider.value = this.cropEnd;
-        if (this.cropEndVal) this.cropEndVal.textContent = this.cropEnd.toFixed(2);
-        this._debounceCropRecompute();
-      });
-    }
+    this._refreshCropLabels();
+
+   if (this.cropStartSlider) {
+  this.cropStartSlider.addEventListener("input", () => {
+    let v = parseFloat(this.cropStartSlider.value);
+    if (v >= this.cropEnd) v = this.cropEnd - 0.01;
+    this.cropStart = Math.max(0, v);
+    this.cropStartSlider.value = this.cropStart;
+    this._refreshCropLabels();
+    this._debounceCropRecompute();
+  });
+}
+
+if (this.cropEndSlider) {
+  this.cropEndSlider.addEventListener("input", () => {
+    let v = parseFloat(this.cropEndSlider.value);
+    if (v <= this.cropStart) v = this.cropStart + 0.01;
+    this.cropEnd = Math.min(1, v);
+    this.cropEndSlider.value = this.cropEnd;
+    this._refreshCropLabels();
+    this._debounceCropRecompute();
+  });
+}
 
     this._wireUI();
   }
@@ -159,9 +163,10 @@ _wireUI() {
       this.group = this.groupSelect.value;
       this.show = (this.group !== "off");
       if (this.gain) {
-        this.gain.gain.setValueAtTime(this.show ? 1 : 0, window.audioCtx.currentTime);
+        this.gain.gain.value = this.show ? 1 : 0;
       }
       this._applyGroupRouting();
+      this._updateBottomRowColor();
       //this._currentBus.computeStaticSpectrum().catch(console.warn);
     });
   }
@@ -222,10 +227,13 @@ async loadFile() {
   const file = this.fileInput.files[0]; // get the selected file from input
   if (!file) return;
 
+  console.log(`Track ${this.id}: loadFile started`);
   const arrayBuf = await file.arrayBuffer(); // read file into arraybuffer
   this.fileBuffer = await window.audioCtx.decodeAudioData(arrayBuf); // turn arraybuffer (raw bytes) into AudioBuffer
 
+  console.log(`Track ${this.id}: fileBuffer ready`);
   this.buildAudioGraph(); // creates audio node needed to play/analyse file
+  this._refreshCropLabels();
 
   await window.audioCtx.resume(); //browsers block audioplayback until user interaction, so resume just in case
 
@@ -251,6 +259,18 @@ _debounceCropRecompute() {
   }, 150);
 }
 
+
+_formatSecondsFromFraction(frac) {
+  if (!this.fileBuffer) return `${Number(frac).toFixed(2)} s`;
+  return `${(frac * this.fileBuffer.duration).toFixed(2)} s`;
+}
+
+_refreshCropLabels() {
+  if (this.cropStartVal) this.cropStartVal.textContent = this._formatSecondsFromFraction(this.cropStart);
+  if (this.cropEndVal) this.cropEndVal.textContent = this._formatSecondsFromFraction(this.cropEnd);
+}
+
+
 getCropSeconds() {
   if (!this.fileBuffer) return { offset: 0, duration: 0 };
   const dur = this.fileBuffer.duration;
@@ -271,7 +291,7 @@ getCropSamples() {
 previewPlay() {
   if (!this.fileBuffer) return;
 
-  this.previewStop();
+  this.previewStop(); 
 
   const btn = document.getElementById('previewBtn' + this.id);
 
@@ -330,5 +350,13 @@ createAuditionSource(rate, when) {
   
   src.start(when, offset, duration);
   return src;
+}
+
+_updateBottomRowColor() {
+  const row = document.getElementById('previewBtn' + this.id)?.closest('.trackBottomRow');
+  if (!row) return;
+  if (this.group === 'complement') row.style.background = '#5e8ec3';
+  else if (this.group === 'context') row.style.background = '#bb5858';
+  else row.style.background = '#b0b0b0';
 }
 }

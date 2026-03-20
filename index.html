@@ -9,7 +9,7 @@
   <style>
     body {
       font-family: system-ui, sans-serif;
-      background: #fcc06c;
+      background: #FCC158;
       color: #000000;
       margin: 0;
       display: flex;
@@ -31,11 +31,12 @@
       gap: 8px;
       width: 300px;
       flex-shrink: 0;
-      background: #8b8b8a;
-      border-right: 10px solid #747474;
-      border-left: 10px solid #8b8b8a;
-      border-top: 10px solid #a4a4a4;
-      border-bottom: 10px solid #616161;
+      background: #8d8d8d;
+      padding-right: 12px;
+      padding-left: 12px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      border-radius: 12px;
 
       /* scrollable stuff */
       height: calc(100vh - 80px);
@@ -127,6 +128,9 @@
       border-color: rgb(0, 133, 9);
       color: rgb(117, 180, 1);
     }
+    .engineName {
+  font-weight: 600;
+}
 
     .controls {
       display: flex;
@@ -143,6 +147,13 @@
       border: 1px solid #ccc;
     }
 
+#sidebar .col > label:first-of-type {
+  background: #b0b0b0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+}
     #viz {
       height: 35vh;
     }
@@ -162,7 +173,6 @@
       width: 97.5%;
       padding: 10px;
       background: #c7c7c7;
-      border: 1px solid #373737;
       border-radius: 8px;
     }
 
@@ -170,7 +180,9 @@
       width: 100%;
     }
 
-
+.engineTitle {
+  margin-bottom: 6px;
+}
 
     button,
     input,
@@ -204,7 +216,7 @@
       align-items: stretch;
       gap: 2px;
       min-width: 260px;
-      border: 1px solid #373737;
+      
       border-radius: 8px;
       padding: 8px 12px;
       background: #c7c7c7;
@@ -266,14 +278,20 @@
       margin: 0;
     }
 
-    .trackBottomRow {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      width: 100%;
-      gap: 10px;
-      margin-top: 4px;
-    }
+.trackBottomRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  width: auto;
+  gap: 10px;
+  margin-top: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+  background: #b0b0b0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
 
     .groupControl {
       display: flex;
@@ -313,7 +331,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample Start (%):</span>
+            <span class="sliderTitle">Sample Start:</span>
             <span class="sliderValue" id="cropStartValA">0.00</span>
           </div>
           <input id="cropStartA" type="range" min="0" max="1" value="0" step="0.01">
@@ -321,7 +339,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample End (%):</span>
+            <span class="sliderTitle">Sample End:</span>
             <span class="sliderValue" id="cropEndValA">1.00</span>
           </div>
           <input id="cropEndA" type="range" min="0" max="1" value="1" step="0.01">
@@ -374,7 +392,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample Start (%):</span>
+            <span class="sliderTitle">Sample Start:</span>
             <span class="sliderValue" id="cropStartValB">0.00</span>
           </div>
           <input id="cropStartB" type="range" min="0" max="1" value="0" step="0.01">
@@ -382,7 +400,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample End (%):</span>
+            <span class="sliderTitle">Sample End:</span>
             <span class="sliderValue" id="cropEndValB">1.00</span>
           </div>
           <input id="cropEndB" type="range" min="0" max="1" value="1" step="0.01">
@@ -432,7 +450,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample Start (%):</span>
+            <span class="sliderTitle">Sample Start:</span>
             <span class="sliderValue" id="cropStartValC">0.00</span>
           </div>
           <input id="cropStartC" type="range" min="0" max="1" value="0" step="0.01">
@@ -440,7 +458,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample End (%):</span>
+            <span class="sliderTitle">Sample End:</span>
             <span class="sliderValue" id="cropEndValC">1.00</span>
           </div>
           <input id="cropEndC" type="range" min="0" max="1" value="1" step="0.01">
@@ -490,7 +508,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample Start (%):</span>
+            <span class="sliderTitle">Sample Start:</span>
             <span class="sliderValue" id="cropStartValD">0.00</span>
           </div>
           <input id="cropStartD" type="range" min="0" max="1" value="0" step="0.01">
@@ -498,7 +516,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample End (%):</span>
+            <span class="sliderTitle">Sample End:</span>
             <span class="sliderValue" id="cropEndValD">1.00</span>
           </div>
           <input id="cropEndD" type="range" min="0" max="1" value="1" step="0.01">
@@ -548,7 +566,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample Start (%):</span>
+            <span class="sliderTitle">Sample Start:</span>
             <span class="sliderValue" id="cropStartValE">0.00</span>
           </div>
           <input id="cropStartE" type="range" min="0" max="1" value="0" step="0.01">
@@ -556,7 +574,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample End (%):</span>
+            <span class="sliderTitle">Sample End:</span>
             <span class="sliderValue" id="cropEndValE">1.00</span>
           </div>
           <input id="cropEndE" type="range" min="0" max="1" value="1" step="0.01">
@@ -606,7 +624,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample Start (%):</span>
+            <span class="sliderTitle">Sample Start:</span>
             <span class="sliderValue" id="cropStartValF">0.00</span>
           </div>
           <input id="cropStartF" type="range" min="0" max="1" value="0" step="0.01">
@@ -614,7 +632,7 @@
 
         <label class="small sliderLabel">
           <div class="sliderHeader">
-            <span class="sliderTitle">Sample End (%):</span>
+            <span class="sliderTitle">Sample End:</span>
             <span class="sliderValue" id="cropEndValF">1.00</span>
           </div>
           <input id="cropEndF" type="range" min="0" max="1" value="1" step="0.01">
@@ -673,10 +691,7 @@
               <input id="auditionCents" type="range" min="0" max="1200" value="0" step="1">
             </label>
 
-            <button id="auditionPlay">Play</button>
-
-            <input type="checkbox" id="complementOR">
-            <label for="complementOR">Show complement/audition spectrum</label>
+            <button id="auditionPlay" class="previewBtn">▶ Play interval</button>
           </div>
         </div>
 

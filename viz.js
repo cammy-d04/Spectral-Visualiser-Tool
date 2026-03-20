@@ -29,6 +29,11 @@ resize();
 
 const MARGIN_LEFT = 50, MARGIN_BOTTOM = 30; //layout constants
 
+
+
+
+
+
 function drawAxes(maxFreq, maxAmp){ //draws static axes
   const w = canvas.width, h = canvas.height;
   const xs = MARGIN_LEFT;
@@ -46,33 +51,21 @@ function drawAxes(maxFreq, maxAmp){ //draws static axes
 
 
 // --- X-axis (frequency) --- 
-const fMin = 0;
-const fMax = maxFreq;
-const ticks = 100;
+const fMax = Math.min(maxFreq, 20000);
+const tickSpacing = 200;
+const labelSpacing = 1000;
 
-for (let i = 0; i <= ticks; i++) {
-  const frac = i / ticks;
-
-  // frequency labels stays constant
-  const f = fMin + frac * (fMax - fMin);
-
-  // Apply zoom to position only
+for (let f = 0; f <= fMax; f += tickSpacing) {
+  const frac = f / maxFreq;
   let zoomedFrac = frac * xZoom;
-
-  // If the tick is past the view window, stop drawing
   if (zoomedFrac > 1) break;
-
   const x = xs + zoomedFrac * (w - xs - 8);
-
-  // tick mark
   ctx.beginPath();
   ctx.moveTo(x, ys);
   ctx.lineTo(x, ys + 5);
   ctx.stroke();
-
-  // labels
-  if (i % 5 === 0) {
-    ctx.fillText(Math.round(f), x - 12, ys + 18);
+  if (f % labelSpacing === 0) {
+    ctx.fillText(String(f), x - 12, ys + 16);
   }
 }
 
@@ -84,8 +77,20 @@ for (let i = 0; i <= ticks; i++) {
     const y = ys - (j / yTicks) * (ys - 8);
     const a = (j / yTicks) * maxAmp;
     ctx.beginPath(); ctx.moveTo(xs - 5, y); ctx.lineTo(xs, y); ctx.stroke();
-    ctx.fillText(a.toFixed(1), 8, y + 4);
+    ctx.fillText(a.toFixed(1), 20, y + 4);
   }
+
+
+// Axis labels
+ctx.fillStyle = '#333';
+ctx.font = '12px sans-serif';
+ctx.fillText('Frequency (Hz)', w / 2 - 20 , ys + 28);
+ctx.save();
+ctx.translate(12, ys / 2 + 30);
+ctx.rotate(-Math.PI / 2);
+ctx.fillText('Amplitude', 0, 0);
+ctx.restore();
+
 }
 
 
@@ -124,7 +129,7 @@ function draw() {
 
   const w = canvas.width;
   const h = canvas.height;
-  const nyquist = window.audioCtx.sampleRate / 2;
+const nyquist = 20000;
   const maxAmp = 1.0;
   const plotH = h - MARGIN_BOTTOM - 10; // height of plotting area
 
@@ -147,8 +152,7 @@ function draw() {
 
 let bins;
 
-const showGhost = document.getElementById('complementOR')?.checked;
-if (track === window.buses.complement && showGhost) return;
+if (track === window.buses.complement) return; //skip complement, we draw stretchy one!!!
 
 // For buses, use their staticBins; for tracks, use theirs
 if (track.staticBins) {
@@ -222,9 +226,7 @@ if (track.staticBins) {
 
     for (let i = 0; i < bufLen; i++) {//loop over bins
       const v = bins[i] / 255; //normalise magnitude to between 0 and 1
-      const fMin = 20; // minimum frequency to display  
-      const frac = i / bufLen; 
-      const f = fMin + i / bufLen * (nyquist - fMin); // actual frequency at this bin
+      const frac = (i * binHz) / nyquist;
       const y = (h - MARGIN_BOTTOM) - v * plotH; // convert amplitude to vertical pixel position
 
 
@@ -253,7 +255,7 @@ if (track.staticBins) {
       const i = p.i;
       const v = bins[i] / 255;
 
-      const frac = i / bufLen;
+      const frac = (i * (window.audioCtx.sampleRate / track.analyser.fftSize)) / nyquist;
       let zoomedFrac = frac * xZoom;
       if (zoomedFrac > 1) zoomedFrac = 1;
 
@@ -274,38 +276,92 @@ if (track.staticBins) {
 });
 
 
+// --- Complement spectrum: always drawn stretched by audition interval ---
 
-
-// --- Ghost spectrum: complement stretched by audition interval ---
-
-const showGhost = document.getElementById('complementOR')?.checked;
 const complementBus = window.buses.complement;
-  if (complementBus && complementBus.staticBins && window.auditionCents != null && showGhost) {
+  if (complementBus && complementBus.staticBins && window.auditionCents != null) {
     const ratio = Math.pow(2, window.auditionCents / 1200);
-    const bins = complementBus.staticBins;
+    const compBins = complementBus.staticBins;
     const binHz = window.audioCtx.sampleRate / complementBus.analyser.fftSize;
+    const compBufLen = compBins.length;
 
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = '#6456fe'; 
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = 'dodgerblue';
     ctx.lineWidth = 2;
     ctx.beginPath();
 
     let started = false;
-    for (let i = 0; i < bins.length; i++) {
-      const stretchedF = i * binHz * ratio; // stretched frequency
-      const frac = (stretchedF / nyquist);  // fraction of nyquist
+    for (let i = 0; i < compBufLen; i++) {
+      const stretchedF = i * binHz * ratio;
+      const frac = stretchedF / nyquist;
       let zoomedFrac = frac * xZoom;
-      if (zoomedFrac > 1) break; // off screen
+      if (zoomedFrac > 1) break;
 
       const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
-      const v = bins[i] / 255;
+      const v = compBins[i] / 255;
       const y = (h - MARGIN_BOTTOM) - v * plotH;
 
       if (!started) { ctx.moveTo(x, y); started = true; }
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-    ctx.setLineDash([]); // reset dash
+
+    // --- Peak picking on the stretched complement spectrum ---
+    const MAX_PEAKS = window.maxPeaksPicked ?? 7;
+    let maxBin = 0;
+    for (let k = 0; k < compBufLen; k++) {
+      if (compBins[k] > maxBin) maxBin = compBins[k];
+    }
+
+    const THRESH = (window.threshFrac ?? 0.2) * maxBin;
+    const MIN_SEP_BINS = Math.max(1, Math.round((window.minSepHz ?? 30) / (binHz * ratio)));
+    const MIN_BIN = Math.max(2, Math.round((window.peakFMin ?? 60) / (binHz * ratio)));
+    const compPeaks = [];
+
+    for (let i = Math.max(2, MIN_BIN); i < compBufLen - 2; i++) {
+      const mag = compBins[i];
+      if (mag > compBins[i - 1] && mag >= compBins[i + 1] && mag > THRESH) {
+        compPeaks.push({ i, mag });
+      }
+    }
+    compPeaks.sort((a, b) => b.mag - a.mag);
+
+    const chosenCompPeaks = [];
+    for (const p of compPeaks) {
+      if (chosenCompPeaks.length >= MAX_PEAKS) break;
+      const tooClose = chosenCompPeaks.some(q => Math.abs(q.i - p.i) < MIN_SEP_BINS);
+      if (!tooClose) chosenCompPeaks.push(p);
+    }
+
+    // Store peaks on the bus — unstretched Hz for dissonance calc
+    complementBus.peaks = chosenCompPeaks.map(p => {
+      const f = p.i * binHz;
+      let a = p.mag / 255;
+      a = Math.sqrt(a);
+      return { f, a, bin: p.i };
+    });
+    complementBus.peaksUpdatedAt = performance.now();
+
+    // --- Draw peak dots and labels at stretched positions ---
+    ctx.fillStyle = 'dodgerblue';
+    ctx.font = '12px sans-serif';
+
+    for (const p of chosenCompPeaks) {
+      const stretchedF = p.i * binHz * ratio;
+      const frac = stretchedF / nyquist;
+      let zoomedFrac = frac * xZoom;
+      if (zoomedFrac > 1) continue;
+
+      const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
+      const v = p.mag / 255;
+      const y = (h - MARGIN_BOTTOM) - v * plotH;
+
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillText(`${Math.round(stretchedF)}Hz`, x + 4, y + 12);
+    }
   }
 
   ctx.globalAlpha = 1;

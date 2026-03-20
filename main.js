@@ -27,7 +27,7 @@ window.buses = {
 
 //globals for ui controls
 window.threshFrac = 0.20;
-window.maxPeaksPicked = 20;
+window.maxPeaksPicked = 7;
 window.minSepHz = 30;
 window.peakFMin = 60;
 window.spectrumMode = "static"; // or "static"
@@ -36,7 +36,7 @@ window.centsStep = 1
 
 
 // Array of tracks
-let tracks = [];
+window.tracks = [];
 
 // Create Track instances
 tracks = [
@@ -139,29 +139,77 @@ audSlider.addEventListener("input", () => {
 
 let activeAuditionSources = [];
 
-document.getElementById("auditionPlay").addEventListener("click", () => {
-  if (window.audioCtx.state !== "running") window.audioCtx.resume();
-
-  // 1. Stop any currently playing audition sources
+function auditionStop() {
   activeAuditionSources.forEach(src => {
-    try { src.stop(); } catch(e) {}
+    try { src.stop(); } catch (e) {}
   });
   activeAuditionSources = [];
 
-  const when = window.audioCtx.currentTime;
-  const cents = window.auditionCents;
-  const ratio = Math.pow(2, cents / 1200);
-
-  // 2. Play Context Bus at normal pitch (rate 1.0)
-  if (window.buses.context) {
-    const contextSrcs = window.buses.context.playAudition(1.0, when);
-    activeAuditionSources.push(...contextSrcs);
+  const btn = document.getElementById("auditionPlay");
+  if (btn) {
+    btn.textContent = "▶ Play interval";
+    btn.classList.remove("previewing");
   }
+}
 
-  // 3. Play Complement Bus at shifted pitch
-  if (window.buses.complement) {
-    const complementSrcs = window.buses.complement.playAudition(ratio, when);
-    activeAuditionSources.push(...complementSrcs);
+function auditionPlay() {
+  const btn = document.getElementById("auditionPlay");
+
+  const doPlay = () => {
+    auditionStop();
+
+    const when = window.audioCtx.currentTime;
+    const cents = window.auditionCents;
+    const ratio = Math.pow(2, cents / 1200);
+
+    if (window.buses.context) {
+      const contextSrcs = window.buses.context.playAudition(1.0, when);
+      activeAuditionSources.push(...contextSrcs);
+    }
+
+    if (window.buses.complement) {
+      const complementSrcs = window.buses.complement.playAudition(ratio, when);
+      activeAuditionSources.push(...complementSrcs);
+    }
+
+    if (btn) {
+      btn.textContent = "⏹ Stop interval";
+      btn.classList.add("previewing");
+    }
+
+    let remaining = activeAuditionSources.length;
+
+    if (remaining === 0) {
+      auditionStop();
+      return;
+    }
+
+    activeAuditionSources.forEach(src => {
+      src.onended = () => {
+        remaining--;
+        if (remaining <= 0) {
+          activeAuditionSources = [];
+          if (btn) {
+            btn.textContent = "▶ Play interval";
+            btn.classList.remove("previewing");
+          }
+        }
+      };
+    });
+  };
+
+  if (window.audioCtx.state === "running") {
+    doPlay();
+  } else {
+    window.audioCtx.resume().then(doPlay);
+  }
+}
+
+document.getElementById("auditionPlay").addEventListener("click", () => {
+  if (activeAuditionSources.length > 0) {
+    auditionStop();
+  } else {
+    auditionPlay();
   }
 });
 

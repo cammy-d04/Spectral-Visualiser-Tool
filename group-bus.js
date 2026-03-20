@@ -24,7 +24,7 @@ class GroupBus {
     if (!track || !track.gain) return;
     if (this.tracks.has(track)) return;
 
-    console.log(`Bus ${this.id} attaching track ${track.id}, total: ${this.tracks.size + 1}`);
+    console.log(`Bus ${this.id}: attach track ${track.id}, has fileBuffer: ${!!track.fileBuffer}`);
 
     track.gain.connect(this.gain);
     this.tracks.add(track);
@@ -38,8 +38,6 @@ class GroupBus {
     try { track.gain.disconnect(this.gain); } catch (e) {}
     this.tracks.delete(track);
     this.computeStaticSpectrum().catch(console.warn);
-
-
   }
 
   listTrackIds() {
@@ -70,6 +68,7 @@ async renderMixedBuffer() {
     const offline = new OfflineAudioContext(1, maxSamples, sr);
 
    for (const t of sources) {
+    console.log(`renderMixed: track ${t.id}, gain value: ${t.gain.gain.value}`);
       const src = offline.createBufferSource();
       src.buffer = t.fileBuffer;
 
@@ -119,8 +118,10 @@ async renderMixedBuffer() {
 
   async computeStaticSpectrum() {
   const mixed = await this.renderMixedBuffer(); ////what is goin gon here????
+  console.log(`Bus ${this.id}: renderMixedBuffer returned`, mixed);
   if (!mixed) {
     this.staticBins = null;
+    this.staticRaw = null;
     return null;
   }
 
@@ -130,9 +131,12 @@ async renderMixedBuffer() {
 
   // StaticSpectrum.compute should take an AudioBuffer and return bins/array/etc.
   const result = await StaticSpectrum.compute(mixed, { fftSize, hopSize });
+  console.log(`Bus ${this.id}: staticBins length`, result.bytes.length, 'max byte', Math.max(...result.bytes));
   this.staticBins = result.bytes;
   this.staticRaw = result.raw;
   this.normalizeAllBuses();  // re-scale both buses against shared max
+  console.log(`Bus ${this.id}: after normalize, max staticBin`, Math.max(...this.staticBins));
+
   return this.staticBins;
 }
 
