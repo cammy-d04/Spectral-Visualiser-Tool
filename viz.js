@@ -38,15 +38,18 @@ function drawAxes(maxFreq, maxAmp){ //draws static axes
   const xs = MARGIN_LEFT;
   const ys = h - MARGIN_BOTTOM;
 
-  ctx.strokeStyle = '#888';
+  ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1;
-  ctx.fillStyle = '#333';
+  ctx.fillStyle = '#ffffff';
   ctx.font = '11px sans-serif';
 
+  const plotRight = w - 8;
+  const plotTop = 8;
+
   // y-axis
-  ctx.beginPath(); ctx.moveTo(xs, 0); ctx.lineTo(xs, ys); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(xs, plotTop); ctx.lineTo(xs, ys); ctx.stroke();
   // x-axis
-  ctx.beginPath(); ctx.moveTo(xs, ys); ctx.lineTo(w, ys); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(xs, ys); ctx.lineTo(plotRight, ys); ctx.stroke();
 
 
 // x axis (frequency) 
@@ -81,7 +84,7 @@ for (let f = 0; f <= fMax; f += tickSpacing) {
 
 
 // axis labels
-ctx.fillStyle = '#333';
+ctx.fillStyle = '#ffffff';
 ctx.font = '12px sans-serif';
 ctx.fillText('Frequency (Hz)', w / 2 - 20 , ys + 28);
 ctx.save();
@@ -109,14 +112,23 @@ function draw() {
   const plotH = h - MARGIN_BOTTOM - 10; // height of plotting area
 
   // clear background
-  ctx.fillStyle = '#bdbdbd';
+  ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, w, h);
 
-  drawAxes(nyquist, maxAmp);  
+ drawAxes(nyquist, maxAmp);  
 
-  drawContext(window.buses.context);
-  drawComplement(window.buses.complement);
+// Clip to plot area so nothing draws below the x-axis
+ctx.save();
+ctx.beginPath();
+ctx.rect(MARGIN_LEFT, 0, w - MARGIN_LEFT, h - MARGIN_BOTTOM);
+ctx.clip();
+
+drawContext(window.buses.context);
+drawComplement(window.buses.complement);
+
+ctx.restore();
 }
+
 
 
 
@@ -132,7 +144,7 @@ function drawContext(contextBus){
 
     ctx.globalAlpha = 0.9;
     ctx.strokeStyle = contextBus.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath(); //start a polyline
 
 
@@ -195,7 +207,7 @@ function drawComplement(complementBus) {
 
   ctx.globalAlpha = 0.9;
   ctx.strokeStyle = complementBus.color;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
 
   let started = false;

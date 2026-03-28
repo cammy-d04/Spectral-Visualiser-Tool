@@ -137,6 +137,8 @@ async renderMixedBuffer() {
   this.normalizeAllBuses();  // re-scale both buses against shared max
   console.log(`Bus ${this.id}: after normalize, max staticBin`, Math.max(...this.staticBins));
 
+  this.pickPeaks()
+  rebuildDissonanceCurve();
   return this.staticBins;
 }
 

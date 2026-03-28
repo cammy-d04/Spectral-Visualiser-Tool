@@ -62,11 +62,13 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
   ctx2.fillStyle = '#ffffff';
   ctx2.font = '11px sans-serif';
 
-  // axes
-  ctx2.beginPath(); ctx2.moveTo(xs, 0);  ctx2.lineTo(xs, ys); ctx2.stroke(); // y
-  ctx2.beginPath(); ctx2.moveTo(xs, ys); ctx2.lineTo(w, ys);  ctx2.stroke(); // x
+  const plotRight = xs + plotW;
+  const plotTop = ys - plotH + 2;
 
-  // x ticks (cents)
+  // axes
+  ctx2.beginPath(); ctx2.moveTo(xs, plotTop); ctx2.lineTo(xs, ys); ctx2.stroke(); // y
+  ctx2.beginPath(); ctx2.moveTo(xs, ys); ctx2.lineTo(plotRight, ys); ctx2.stroke(); // x
+    // x ticks (cents)
   const ticksX = 12; // 0..1200 every 100 cents
   for (let i = 0; i <= ticksX; i++) {
     const frac = i / ticksX;
@@ -124,7 +126,7 @@ const CURVE_MS = 1000 / CURVE_HZ;
 
 let curve = null;
 
-window.rebuildDissonanceCurve = function() {
+function rebuildDissonanceCurve() {
   const peaks1 = window.buses.context?.peaks;
   const peaks2 = window.buses.complement?.peaks;
   

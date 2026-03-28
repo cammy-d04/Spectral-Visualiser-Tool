@@ -154,7 +154,6 @@ _wireUI() {
       }
       this._applyGroupRouting();
       this._updateBottomRowColor();
-      //this._currentBus.computeStaticSpectrum().catch(console.warn);
     });
   }
 }
@@ -213,6 +212,7 @@ async loadFile() {
   if (this._currentBus) { 
   console.log(`Bus ${this._currentBus.id} recomputing static spectrum due to file load on track ${this.id}`);
   this._currentBus.computeStaticSpectrum().catch(console.warn);
+  rebuildDissonanceCurve();
   }
 }
 
@@ -222,9 +222,9 @@ _scheduleBusRecompute() {
   this._busRecomputeDebounce = setTimeout(() => {
     if (this._currentBus) {
       this._currentBus.computeStaticSpectrum().catch(console.warn);
-      window.rebuildDissonanceCurve();
+      rebuildDissonanceCurve();
     }
-  }, 150);
+  }, 0);
 }
 
 _formatSecondsFromFraction(frac) {

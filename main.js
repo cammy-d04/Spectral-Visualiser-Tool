@@ -92,7 +92,7 @@ const threshVal = document.getElementById("threshFracVal");
 threshEl.addEventListener("input", () => {
   window.threshFrac = Number(threshEl.value);
   threshVal.textContent = window.threshFrac.toFixed(2);
-  window.rebuildDissonanceCurve();
+  rebuildDissonanceCurve();
 });
 
 const maxPeaksEl = document.getElementById("maxPeaksPicked");
@@ -100,7 +100,7 @@ const maxPeaksVal = document.getElementById("maxPeaksVal");
 maxPeaksEl.addEventListener("input", () => {
   window.maxPeaksPicked = Number(maxPeaksEl.value);
   maxPeaksVal.textContent = String(window.maxPeaksPicked);
-  window.rebuildDissonanceCurve();
+  rebuildDissonanceCurve();
 });
 
 const minSepEl = document.getElementById("minSepHz");
@@ -108,7 +108,7 @@ const minSepVal = document.getElementById("minSepHzVal");
 minSepEl.addEventListener("input", () => {
   window.minSepHz = Number(minSepEl.value);
   minSepVal.textContent = String(window.minSepHz);
-  window.rebuildDissonanceCurve();
+  rebuildDissonanceCurve();
 });
 
 const peakFMinEl = document.getElementById("peakFMin");
@@ -116,7 +116,7 @@ const peakFMinVal = document.getElementById("peakFMinVal");
 peakFMinEl.addEventListener("input", () => {
   window.peakFMin = Number(peakFMinEl.value);
   peakFMinVal.textContent = String(window.peakFMin);
-  window.rebuildDissonanceCurve();
+  rebuildDissonanceCurve();
 });
 
 const ampEl = document.getElementById("ampCompress");
