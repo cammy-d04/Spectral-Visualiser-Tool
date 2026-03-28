@@ -62,8 +62,6 @@ tracks = [
 
 let xZoom = 1;
 
-//set tracks to be used in viz 1/2
-vizTracks = [window.buses.context, window.buses.complement]; 
 
 startViz();  // start viz
 startViz2(); //start viz2 (dissonance curve) with first track
@@ -94,6 +92,7 @@ const threshVal = document.getElementById("threshFracVal");
 threshEl.addEventListener("input", () => {
   window.threshFrac = Number(threshEl.value);
   threshVal.textContent = window.threshFrac.toFixed(2);
+  window.rebuildDissonanceCurve();
 });
 
 const maxPeaksEl = document.getElementById("maxPeaksPicked");
@@ -101,6 +100,7 @@ const maxPeaksVal = document.getElementById("maxPeaksVal");
 maxPeaksEl.addEventListener("input", () => {
   window.maxPeaksPicked = Number(maxPeaksEl.value);
   maxPeaksVal.textContent = String(window.maxPeaksPicked);
+  window.rebuildDissonanceCurve();
 });
 
 const minSepEl = document.getElementById("minSepHz");
@@ -108,6 +108,7 @@ const minSepVal = document.getElementById("minSepHzVal");
 minSepEl.addEventListener("input", () => {
   window.minSepHz = Number(minSepEl.value);
   minSepVal.textContent = String(window.minSepHz);
+  window.rebuildDissonanceCurve();
 });
 
 const peakFMinEl = document.getElementById("peakFMin");
@@ -115,6 +116,7 @@ const peakFMinVal = document.getElementById("peakFMinVal");
 peakFMinEl.addEventListener("input", () => {
   window.peakFMin = Number(peakFMinEl.value);
   peakFMinVal.textContent = String(window.peakFMin);
+  window.rebuildDissonanceCurve();
 });
 
 const ampEl = document.getElementById("ampCompress");
@@ -122,6 +124,7 @@ const ampVal = document.getElementById("ampCompressVal");
 ampEl.addEventListener("input", () => {
   window.ampCompress = Number(ampEl.value);
   ampVal.textContent = window.ampCompress.toFixed(2);
+  window.rebuildDissonanceCurve();
 });
 
 

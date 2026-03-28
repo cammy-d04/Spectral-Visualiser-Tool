@@ -1,9 +1,3 @@
-// sethares visualisation code
-// takes chosen tracks peaks
-//take shifted peaks
-// apply sethares kernel to each pair of partials
-//
-
 
 function startViz2() {
   requestAnimationFrame(drawViz2);
@@ -11,172 +5,8 @@ function startViz2() {
 
 
 
-// Sethares / Plomp–Levelt sensory dissonance kernel
-// f1, f2 in Hz
-// returns a non-negative roughness contribution (dimensionless)
-function setharesKernel(f1, f2) {
-  const df = Math.abs(f1 - f2);
-  if (df === 0) return 0;
+// sethares dissonane curve visualisation
 
-  const minF = Math.min(f1, f2);
-
-  // Equivalent Rectangular Bandwidth (ERB) approximation
-  const erb = 24.7 * (4.37e-3 * minF + 1);
-
-  const x = df / erb;
-
-  const a = 3.5;
-  const b = 5.75;
-  return Math.exp(-a * x) - Math.exp(-b * x);
-}
-
-
-// Compute Sethares sensory dissonance between two peak sets
-// peaksA, peaksB: arrays of { f: frequencyHz, a: amplitude }
-// returns a single scalar dissonance value
-function setharesDissonance(peaksA, peaksB) {
-  let dissonanceSum = 0;
-
-  for (let i = 0; i < peaksA.length; i++) {
-
-    if (peaksA[i].a === 0) continue;
-
-    for (let j = 0; j < peaksB.length; j++) {
-
-      if (peaksB[j].a === 0) continue;
-      dissonanceSum += peaksA[i].a * peaksB[j].a * setharesKernel(peaksA[i].f, peaksB[j].f);
-    }
-  }
-  return dissonanceSum;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Build a Sethares dissonance curve by comparing a peak set to a shifted copy.
-//
-// peaks: Array<{ f: number, a: number }>
-// opts:
-//   centsMin (default 0)
-//   centsMax (default 1200)
-//   centsStep (default 10)
-//   maxPeaks (default 30)      // cap strongest peaks for speed
-//   normalizeCurve (default true) // scale y to [0,1] for plotting
-//   ampCompress (default 0.5)  // 1.0 none, 0.5 sqrt, etc.
-function buildDissonanceCurve(peaks1, peaks2, opts = {}) {
-  const {
-    centsMin = 0,
-    centsMax = 1200,
-    centsStep = 10,
-    maxPeaks = 30,
-    normalizeCurve = true,
-    ampCompress = 0.5,
-  } = opts;
-
-  if (!peaks1 || peaks1.length < 1 || !peaks2 || peaks2.length < 1) {
-    return { cents: [], values: [], rawMin: 0, rawMax: 0 };
-  }
-
-  // --- 1) Clean + cap peaks (top by amplitude) ---
-  const cleaned1 = peaks1
-    .filter(p => p && isFinite(p.f) && isFinite(p.a) && p.f > 0 && p.a > 0)
-    .sort((p1, p2) => p2.a - p1.a)
-    .slice(0, maxPeaks);
-
-  const cleaned2 = peaks2
-    .filter(p => p && isFinite(p.f) && isFinite(p.a) && p.f > 0 && p.a > 0)
-    .sort((p1, p2) => p2.a - p1.a)
-    .slice(0, maxPeaks);
-
-  if (cleaned1.length < 1 || cleaned2.length < 1) {
-    return { cents: [], values: [], rawMin: 0, rawMax: 0 };
-  }
-
-  // --- 2) Normalize amplitudes (and optionally compress) ---
-  let aMax1 = 0;
-  for (const p of cleaned1) aMax1 = Math.max(aMax1, p.a);
-  if (aMax1 <= 0) aMax1 = 1;
-
-  // --- 2) Normalize amplitudes (and optionally compress) ---
-  let aMax2 = 0;
-  for (const p of cleaned2) aMax2 = Math.max(aMax2, p.a);
-  if (aMax2 <= 0) aMax2 = 1;
-
-
-  const base1 = cleaned1.map(p => {
-    let a = p.a / aMax1;
-    if (ampCompress !== 1.0) a = Math.pow(a, ampCompress);
-    return { f: p.f, a };
-  });
-
-  const base2 = cleaned2.map(p => {
-    let a = p.a / aMax2;
-    if (ampCompress !== 1.0) a = Math.pow(a, ampCompress);
-    return { f: p.f, a };
-  });
-
-  // --- 3) Sweep cents and compute dissonance vs shifted copy ---
-  const cents = [];
-  const values = [];
-
-  let rawMin = Infinity;
-  let rawMax = -Infinity;
-
-  for (let c = centsMin; c <= centsMax + 1e-9; c += centsStep) {
-    const ratio = Math.pow(2, c / 1200);
-
-    // Shift copy (frequency scaled, amplitudes unchanged)
-    const shifted = base2.map(p => ({ f: p.f * ratio, a: p.a }));
-
-    const D = setharesDissonance(base1, shifted);
-
-    cents.push(c);
-    values.push(D);
-
-    if (D < rawMin) rawMin = D;
-    if (D > rawMax) rawMax = D;
-  }
-
-  // --- 4) Normalize curve to [0,1] for stable y-axis ---
-  if (normalizeCurve && isFinite(rawMin) && isFinite(rawMax) && rawMax > rawMin) {
-    const inv = 1 / (rawMax - rawMin);
-    for (let i = 0; i < values.length; i++) {
-      values[i] = (values[i] - rawMin) * inv;
-    }
-  } else if (normalizeCurve) {
-    // flat / degenerate curve
-    for (let i = 0; i < values.length; i++) values[i] = 0;
-    rawMin = rawMax = 0;
-  }
-
-  return { cents, values, rawMin, rawMax };
-}
-
-
-
-
-
-
-
-
-
-// =====================
-// Viz2: Dissonance curve
-// =====================
-
-// Canvas for viz2 (make sure your HTML has <canvas id="viz2"></canvas>)
 const canvas2 = document.getElementById('viz2');
 const ctx2 = canvas2.getContext('2d');
 const MARGIN2_LEFT = 50, MARGIN2_BOTTOM = 30;
@@ -189,7 +19,8 @@ function resizeViz2() {
 window.addEventListener('resize', resizeViz2);
 resizeViz2();
 
-// Geometry helpers for viz2
+
+// geometry helpers for viz2
 function viz2PlotGeom() {
   const w = canvas2.width;
   const h = canvas2.height;
@@ -225,9 +56,10 @@ function centsToXViz2(cents) {
 function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
   const { w, h, xs, ys, plotW, plotH } = viz2PlotGeom();
 
-  ctx2.strokeStyle = '#888';
+  ctx2.globalAlpha = 1;
+  ctx2.strokeStyle = '#ffffff';
   ctx2.lineWidth = 1;
-  ctx2.fillStyle = '#333';
+  ctx2.fillStyle = '#ffffff';
   ctx2.font = '11px sans-serif';
 
   // axes
@@ -269,7 +101,7 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
 
 
   // Axis labels
-ctx2.fillStyle = '#333';
+ctx2.fillStyle = '#ffffff';
 ctx2.font = '12px sans-serif';
 ctx2.fillText('Interval (cents)', xs + plotW / 2 - 40, ys + 28);
 ctx2.save();
@@ -283,14 +115,31 @@ ctx2.restore();
 
 
 
-// Throttle curve computation (curve math is heavier than drawing)
+// Throttle curve computation 
 let lastCurveTime = 0;
 let cachedCurve = null;
 const CURVE_HZ = 60; // compute curve 60 times/sec
 const CURVE_MS = 1000 / CURVE_HZ;
 
-    
 
+let curve = null;
+
+window.rebuildDissonanceCurve = function() {
+  const peaks1 = window.buses.context?.peaks;
+  const peaks2 = window.buses.complement?.peaks;
+  
+  if (!peaks1?.length || !peaks2?.length) {
+    curve = null;
+    return;
+  }
+  
+  curve = buildDissonanceCurve(peaks1, peaks2, {
+    maxPeaks: 30,
+    centsStep: window.centsStep ?? 10,
+    normalizeCurve: true,
+    ampCompress: window.ampCompress ?? 0.5
+  });
+};
 
 function drawViz2() {
 
@@ -300,27 +149,13 @@ function drawViz2() {
   const h = canvas2.height;
 
   // Clear
-  ctx2.fillStyle = '#fff';
+  ctx2.fillStyle = '#000000';
   ctx2.fillRect(0, 0, w, h);
 
   // Axes: x=0..1200 cents, y=0..1 (because buildDissonanceCurve normalizes)
   drawAxesViz2(1200, 1.0);
 
-  const peaks1 = window.buses.context.peaks;
-  const peaks2 = window.buses.complement.peaks;
 
-  // Compute curve at limited rate, reuse cached curve for intermediate frames
-  const now = performance.now();
-  if (!cachedCurve || (now - lastCurveTime) >= CURVE_MS) {
-    cachedCurve = buildDissonanceCurve(peaks1, peaks2, {
-        maxPeaks: 30,
-        centsStep: window.centsStep ?? 10,
-        normalizeCurve: true,
-        ampCompress: window.ampCompress ?? 0.5
-    });
-    lastCurveTime = now;
-  }
-  const curve = cachedCurve;
   if (!curve || curve.cents.length === 0) return;
 
   // --- Master dissonance meter ---
@@ -348,7 +183,7 @@ else{
 
   const { xs, ys, plotW, plotH } = viz2PlotGeom();
 
-  ctx2.globalAlpha = 0.9; //transparency
+  ctx2.globalAlpha = 1; //transparency
   ctx2.strokeStyle = '#6456fe';
   ctx2.lineWidth = 2; //thickness
   ctx2.beginPath();
@@ -365,17 +200,6 @@ else{
   }
   ctx2.stroke();
   ctx2.globalAlpha = 1;
-
-
-
-  // const INTERVAL_LINES = [ // intervals to be overlayed in cents with labels
-  //   { cents: 0,    label: "1/1" },
-  //   { cents: 316,  label: "6/5" },
-  //   { cents: 386,  label: "5/4" },
-  //   { cents: 500,  label: "4/3" },
-  //   { cents: 700,  label: "3/2" },
-  //   { cents: 1200, label: "2/1" },
-  // ];
 
 
 // --- Tuning system interval overlays ---
@@ -501,7 +325,7 @@ for (let sysIdx = 0; sysIdx < overlaysToDraw.length; sysIdx++) {
 
   ctx2.save();
   ctx2.globalAlpha = 0.8;
-  ctx2.strokeStyle = "#000";
+  ctx2.strokeStyle = "#ffffff";
   ctx2.lineWidth = 1;
 
   ctx2.beginPath();

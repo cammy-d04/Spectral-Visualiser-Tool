@@ -6,12 +6,10 @@
 class Track {
   constructor(opts) { 
     this.id = opts.id;           // A, B, C etc
-    this.color = opts.color;     // (prob dont need)
 
     this.groupSelect = document.getElementById("show" + this.id);
     this.group = this.groupSelect ? this.groupSelect.value : 'context'; 
     this.show = (this.group !== 'off');
-
 
     this.gain = window.audioCtx.createGain();
 
@@ -58,14 +56,8 @@ if (this.pitchSlider) {
     if (this.pitchValueLabel) {
       this.pitchValueLabel.textContent = this.pitchRate.toFixed(2);
     }
-
-    clearTimeout(this._pitchDebounce);
-    this._pitchDebounce = setTimeout(() => {
-      if (this._currentBus) {
-        this._currentBus.computeStaticSpectrum().catch(console.warn);
-      }
-    }, 150);
-  });
+    this._scheduleBusRecompute();
+    });
 }
 
 this.volSlider = document.getElementById("vol" + this.id);
@@ -85,12 +77,7 @@ if (this.volSlider) {
 
     this.gain.gain.setValueAtTime(v, window.audioCtx.currentTime);
 
-    clearTimeout(this._volDebounce);
-    this._volDebounce = setTimeout(() => {
-      if (this._currentBus) {
-        this._currentBus.computeStaticSpectrum().catch(console.warn);
-      }
-    }, 150);
+    this._scheduleBusRecompute();
   });
 }
 
@@ -109,7 +96,7 @@ if (this.volSlider) {
     this.cropStart = Math.max(0, v);
     this.cropStartSlider.value = this.cropStart;
     this._refreshCropLabels();
-    this._debounceCropRecompute();
+    this._scheduleBusRecompute();
   });
 }
 
@@ -120,7 +107,7 @@ if (this.cropEndSlider) {
     this.cropEnd = Math.min(1, v);
     this.cropEndSlider.value = this.cropEnd;
     this._refreshCropLabels();
-    this._debounceCropRecompute();
+    this._scheduleBusRecompute();
   });
 }
 
@@ -198,26 +185,6 @@ buildAudioGraph() {
   this.fileSource = src;
 }
 
-
-start() {
-  if (!this.fileSource && this.fileBuffer) this.buildAudioGraph();
-  if (!this.fileSource) return;
-
-  try { this.fileSource.start(); } catch (e) {}
-}
-
-
-
-
-stop() {
-  if (this.fileSource) {
-    try { this.fileSource.stop(); } catch (e) {}
-    try { this.fileSource.disconnect(); } catch (e) {}
-  }
-  this.fileSource = null;
-}
-
-
 /*
 loads file from input, turns it into an audio node then 
 kicks off the draw loop if not started already
@@ -250,15 +217,15 @@ async loadFile() {
 }
 
 
-_debounceCropRecompute() {
-  clearTimeout(this._cropDebounce);
-  this._cropDebounce = setTimeout(() => {
+_scheduleBusRecompute() {
+  clearTimeout(this._busRecomputeDebounce);
+  this._busRecomputeDebounce = setTimeout(() => {
     if (this._currentBus) {
       this._currentBus.computeStaticSpectrum().catch(console.warn);
+      window.rebuildDissonanceCurve();
     }
   }, 150);
 }
-
 
 _formatSecondsFromFraction(frac) {
   if (!this.fileBuffer) return `${Number(frac).toFixed(2)} s`;
