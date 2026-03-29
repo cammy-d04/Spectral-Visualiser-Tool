@@ -108,14 +108,6 @@ peakFMinEl.addEventListener("input", () => {
   rebuildDissonanceCurve();
 });
 
-const ampEl = document.getElementById("ampCompress");
-const ampVal = document.getElementById("ampCompressVal");
-ampEl.addEventListener("input", () => {
-  window.ampCompress = Number(ampEl.value);
-  ampVal.textContent = window.ampCompress.toFixed(2);
-  window.rebuildDissonanceCurve();
-});
-
 
 window.auditionCents = 0;
 

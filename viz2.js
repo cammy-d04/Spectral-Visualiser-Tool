@@ -20,42 +20,24 @@ window.addEventListener('resize', resizeViz2);
 resizeViz2();
 
 
-// geometry helpers for viz2
-function viz2PlotGeom() {
-  const w = canvas2.width;
-  const h = canvas2.height;
-
-  const xs = MARGIN2_LEFT;
-  const ys = h - MARGIN2_BOTTOM;
-
-  const plotW = (w - xs - 10);
-  const plotH = (h - MARGIN2_BOTTOM - 10);
-
-  return { w, h, xs, ys, plotW, plotH };
-}
-
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-function xToCentsViz2(xCanvas) {
-  const { xs, plotW } = viz2PlotGeom();
+function xToCentsViz2(xCanvas, xs, plotW) {
   const frac = (xCanvas - xs) / plotW;   
-  return clamp(frac, 0, 1) * 1200;     
+  return clamp(frac, 0, 1) * 1200;
 }
 
-function centsToXViz2(cents) {
-  const { xs, plotW } = viz2PlotGeom();
+function centsToXViz2(cents, xs, plotW) {
   return xs + (clamp(cents, 0, 1200) / 1200) * plotW;
 }
 
 
 
 
-function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
-  const { w, h, xs, ys, plotW, plotH } = viz2PlotGeom();
-
+function drawAxesViz2(xMaxCents = 1200, yMax = 1.0, xs, ys, plotW, plotH) {
   ctx2.globalAlpha = 1;
   ctx2.strokeStyle = '#ffffff';
   ctx2.lineWidth = 1;
@@ -113,17 +95,6 @@ ctx2.fillText('Dissonance', 0, 0);
 ctx2.restore();
 }
 
-
-
-
-
-// Throttle curve computation 
-let lastCurveTime = 0;
-let cachedCurve = null;
-const CURVE_HZ = 60; // compute curve 60 times/sec
-const CURVE_MS = 1000 / CURVE_HZ;
-
-
 let curve = null;
 
 function rebuildDissonanceCurve() {
@@ -135,43 +106,42 @@ function rebuildDissonanceCurve() {
     return;
   }
   
-  curve = buildDissonanceCurve(peaks1, peaks2, {
-    maxPeaks: 30,
-    centsStep: window.centsStep ?? 10,
-    normalizeCurve: true,
-    ampCompress: window.ampCompress ?? 0.5
-  });
+  curve = buildDissonanceCurve(peaks1, peaks2);
 };
 
 
 function drawViz2() {
-  requestAnimationFrame(drawViz2);
-
   const w = canvas2.width;
   const h = canvas2.height;
+  const xs = MARGIN2_LEFT;
+  const ys = h - MARGIN2_BOTTOM;
+  const plotW = (w - xs - 10);
+  const plotH = (h - MARGIN2_BOTTOM - 10);
+
+  requestAnimationFrame(drawViz2);
 
   // Clear
   ctx2.fillStyle = '#000000';
   ctx2.fillRect(0, 0, w, h);
 
   // Axes: x=0 to1200 cents, y=0 to1 (because buildDissonanceCurve normalizes)
-  drawAxesViz2(1200, 1.0);
+  drawAxesViz2(1200, 1.0, xs, ys, plotW, plotH);
 
 
   if (!curve || curve.cents.length === 0) return;
 
-  const { xs, ys, plotW, plotH } = viz2PlotGeom();
+  // ---draw dissonance curve---
 
   ctx2.globalAlpha = 1; //transparency
-  ctx2.strokeStyle = '#4636f8';
-  ctx2.lineWidth = 2; //thickness
+  ctx2.strokeStyle = '#8635f7';
+  ctx2.lineWidth = 1.5; //thickness
   ctx2.beginPath();
 
   for (let i = 0; i < curve.cents.length; i++) {
     const c = curve.cents[i];      // 0..1200
     const v = curve.values[i];     // 0..1
 
-    const x = centsToXViz2(c);
+    const x = centsToXViz2(c, xs, plotW);
     const y = ys - v * plotH;
 
     if (i === 0) ctx2.moveTo(x, y);
@@ -180,7 +150,7 @@ function drawViz2() {
   ctx2.stroke();
   ctx2.globalAlpha = 1;
 
-// --- Tuning system interval overlays ---
+// ---Tuning system interval overlays---
 
 const TUNING_SYSTEMS = {
   just: {
@@ -271,14 +241,14 @@ for (let i = 0; i < overlaysToDraw.length; i++) {
   const labelYOffset = overlaysToDraw.length > 1 ? i * 12 : 0;
 
   ctx2.save();
-  ctx2.globalAlpha = 0.4;
+  ctx2.globalAlpha = 0.3;
   ctx2.strokeStyle = "#ffffff";
-  ctx2.fillStyle = overlaysToDraw[i].color;
+  ctx2.fillStyle = "#ffffff";
   ctx2.lineWidth = 1;
   ctx2.font = "10px sans-serif";
 
   for (const interval of overlaysToDraw[i].intervals) {
-    const x = centsToXViz2(interval.cents);
+    const x = centsToXViz2(interval.cents, xs, plotW);
 
     ctx2.beginPath();
     ctx2.moveTo(x, ys);
@@ -293,11 +263,11 @@ for (let i = 0; i < overlaysToDraw.length; i++) {
 
     // Slider audition line
   const cents = window.auditionCents ?? 0;
-  const xLine = centsToXViz2(cents);
+  const xLine = centsToXViz2(cents, xs, plotW);
 
   ctx2.save();
   ctx2.globalAlpha = 0.8;
-  ctx2.strokeStyle = "#ffffff";
+  ctx2.strokeStyle = "#15ff00";
   ctx2.lineWidth = 1;
 
   ctx2.beginPath();
