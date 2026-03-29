@@ -86,7 +86,7 @@ function drawAxesViz2(xMaxCents = 1200, yMax = 1.0) {
     }
   }
 
-  // y ticks (normalized dissonance 0..1)
+  // y ticks (normalized dissonance 0 to 1)
   const ticksY = 5;
   for (let j = 0; j <= ticksY; j++) {
     const frac = j / ticksY;
@@ -143,8 +143,8 @@ function rebuildDissonanceCurve() {
   });
 };
 
-function drawViz2() {
 
+function drawViz2() {
   requestAnimationFrame(drawViz2);
 
   const w = canvas2.width;
@@ -154,39 +154,16 @@ function drawViz2() {
   ctx2.fillStyle = '#000000';
   ctx2.fillRect(0, 0, w, h);
 
-  // Axes: x=0..1200 cents, y=0..1 (because buildDissonanceCurve normalizes)
+  // Axes: x=0 to1200 cents, y=0 to1 (because buildDissonanceCurve normalizes)
   drawAxesViz2(1200, 1.0);
 
 
   if (!curve || curve.cents.length === 0) return;
 
-  // --- Master dissonance meter ---
-else{
-  const currentCents = window.auditionCents ?? 0;
-
-  // find nearest index in curve for current audition position
-  const idx = Math.round((currentCents - 0) / (window.centsStep ?? 1));
-  const clampedIdx = Math.max(0, Math.min(curve.values.length - 1, idx));
-  const val = curve.values[clampedIdx]; // 0..1 (normalized)
-
-  // color: green -> yellow -> red
-  const r = Math.round(Math.min(255, val * 2 * 255));
-  const g = Math.round(Math.min(255, (1 - val) * 2 * 255));
-  const color = `rgb(${r},${g},0)`;
-
-  const fill = document.getElementById('dissonanceMeterFill');
-  const label = document.getElementById('dissonanceMeterVal');
-  if (fill) {
-    fill.style.width = `${(val * 100).toFixed(1)}%`;
-    fill.style.background = color;
-  }
-  if (label) label.textContent = val.toFixed(3);
-}
-
   const { xs, ys, plotW, plotH } = viz2PlotGeom();
 
   ctx2.globalAlpha = 1; //transparency
-  ctx2.strokeStyle = '#6456fe';
+  ctx2.strokeStyle = '#4636f8';
   ctx2.lineWidth = 2; //thickness
   ctx2.beginPath();
 
@@ -203,13 +180,11 @@ else{
   ctx2.stroke();
   ctx2.globalAlpha = 1;
 
-
 // --- Tuning system interval overlays ---
 
 const TUNING_SYSTEMS = {
   just: {
     label: "Just Intonation",
-    color: "#0000006d",
     intervals: [
       { cents: 0,    label: "1/1" },
       { cents: 112,  label: "16/15" },
@@ -230,7 +205,6 @@ const TUNING_SYSTEMS = {
   },
   pyth: {
     label: "Pythagorean",
-    color: "#0000006d",
     intervals: [
       { cents: 0,    label: "P1" },
       { cents: 90,   label: "m2" },
@@ -249,7 +223,6 @@ const TUNING_SYSTEMS = {
   },
   "12tet": {
     label: "12-TET",
-    color: "#0000006d",
     intervals: Array.from({ length: 13 }, (_, i) => ({
       cents: i * 100,
       label: ["P1","m2","M2","m3","M3","P4","TT","P5","m6","M6","m7","M7","P8"][i]
@@ -257,7 +230,6 @@ const TUNING_SYSTEMS = {
   },
     pelog: {
     label: "Javanese Pelog",
-    color: "#0000006d",
     intervals: [
       { cents: 0,    label: "" },
       { cents: 120,   label: "" },
@@ -276,7 +248,6 @@ const TUNING_SYSTEMS = {
     },
     slendro: {
       label: "Javanese Slendro",
-      color: "#0000006d",
       intervals: [
         { cents: 240,    label: "" },
         { cents: 480,   label: "" },
@@ -296,18 +267,17 @@ if (overlayMode === 'none') {
   overlaysToDraw = [TUNING_SYSTEMS[overlayMode]];
 }
 
-for (let sysIdx = 0; sysIdx < overlaysToDraw.length; sysIdx++) {
-  const sys = overlaysToDraw[sysIdx];
-  const labelYOffset = overlaysToDraw.length > 1 ? sysIdx * 12 : 0;
+for (let i = 0; i < overlaysToDraw.length; i++) {
+  const labelYOffset = overlaysToDraw.length > 1 ? i * 12 : 0;
 
   ctx2.save();
   ctx2.globalAlpha = 0.4;
-  ctx2.strokeStyle = sys.color;
-  ctx2.fillStyle = sys.color;
+  ctx2.strokeStyle = "#ffffff";
+  ctx2.fillStyle = overlaysToDraw[i].color;
   ctx2.lineWidth = 1;
   ctx2.font = "10px sans-serif";
 
-  for (const interval of sys.intervals) {
+  for (const interval of overlaysToDraw[i].intervals) {
     const x = centsToXViz2(interval.cents);
 
     ctx2.beginPath();

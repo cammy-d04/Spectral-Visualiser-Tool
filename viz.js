@@ -165,11 +165,11 @@ function drawContext(contextBus){
     //draw polyline
     ctx.stroke();
 
-    // draw peak labels after the line so they appear on top
-    ctx.fillStyle = contextBus.color;
-    ctx.font = '12px sans-serif';
-
+    // draw peak dots and labels
     contextBus.pickPeaks();
+
+    ctx.fillStyle = "#ffa8a8";
+    ctx.font = '12px sans-serif';
 
     for (const peak of contextBus.peaks) {
       const v = contextBus.staticBins[peak.bin] / 255;
@@ -229,7 +229,7 @@ function drawComplement(complementBus) {
   complementBus.pickPeaks();
 
   // --- Draw peak dots and labels at stretched positions ---
-  ctx.fillStyle = complementBus.color;
+  ctx.fillStyle = "#abc4ff";
   ctx.font = '12px sans-serif';
 
   for (const peak of complementBus.peaks) {

@@ -67,17 +67,6 @@ startViz();  // start viz
 startViz2(); //start viz2 (dissonance curve) with first track
 
 
-
-
-
-
-
-
-
-
-
-
-
 // =====================
 // UI wiring
 // =====================
