@@ -20,9 +20,7 @@ function setharesKernel(f1, f2) {
 }
 
 
-// Compute Sethares sensory dissonance between two peak sets
-// peaksA, peaksB: arrays of { f: frequencyHz, a: amplitude }
-// returns a single scalar dissonance value
+// Compute Sethares sensory dissonance between all pairs of peaks in the input array
 function setharesDissonance(peaks) {
     let dissonanceSum = 0;
 

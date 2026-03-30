@@ -67,9 +67,28 @@ startViz();  // start viz
 startViz2(); //start viz2 (dissonance curve) with first track
 
 
+
+
+
+
+
+
 // =====================
 // UI wiring
 // =====================
+
+// main.js (add near top)
+let dissonanceMeterTimeout = null;
+
+function scheduleDissonanceMeter() {
+  clearTimeout(dissonanceMeterTimeout);
+  dissonanceMeterTimeout = setTimeout(() => {
+    DissonanceMeter.compute();
+  }, 150);  // wait 150ms after last slider move
+}
+
+
+
 
 document.getElementById("xZoom").addEventListener("input", e => {
   xZoom = parseFloat(e.target.value);
@@ -82,6 +101,7 @@ threshEl.addEventListener("input", () => {
   window.threshFrac = Number(threshEl.value);
   threshVal.textContent = window.threshFrac.toFixed(2);
   rebuildDissonanceCurve();
+  scheduleDissonanceMeter();
 });
 
 const maxPeaksEl = document.getElementById("maxPeaksPicked");
@@ -90,6 +110,7 @@ maxPeaksEl.addEventListener("input", () => {
   window.maxPeaksPicked = Number(maxPeaksEl.value);
   maxPeaksVal.textContent = String(window.maxPeaksPicked);
   rebuildDissonanceCurve();
+  scheduleDissonanceMeter();
 });
 
 const minSepEl = document.getElementById("minSepHz");
@@ -98,6 +119,7 @@ minSepEl.addEventListener("input", () => {
   window.minSepHz = Number(minSepEl.value);
   minSepVal.textContent = String(window.minSepHz);
   rebuildDissonanceCurve();
+ scheduleDissonanceMeter();
 });
 
 const peakFMinEl = document.getElementById("peakFMin");
@@ -106,6 +128,7 @@ peakFMinEl.addEventListener("input", () => {
   window.peakFMin = Number(peakFMinEl.value);
   peakFMinVal.textContent = String(window.peakFMin);
   rebuildDissonanceCurve();
+  scheduleDissonanceMeter();
 });
 
 
@@ -116,6 +139,7 @@ const audVal = document.getElementById("auditionCentsVal");
 audSlider.addEventListener("input", () => {
   window.auditionCents = Number(audSlider.value);
   audVal.textContent = String(window.auditionCents);
+  scheduleDissonanceMeter();
 });
 
 
@@ -125,9 +149,12 @@ let activeAuditionSources = [];
 
 function auditionStop() {
   activeAuditionSources.forEach(src => {
+    try { src.onended = null; } catch (e) {}
     try { src.stop(); } catch (e) {}
   });
   activeAuditionSources = [];
+
+  DissonanceMeter.stopPlayback();
 
   const btn = document.getElementById("auditionPlay");
   if (btn) {
@@ -145,6 +172,8 @@ function auditionPlay() {
     const when = window.audioCtx.currentTime;
     const cents = window.auditionCents;
     const ratio = Math.pow(2, cents / 1200);
+
+    DissonanceMeter.startPlayback();
 
     if (window.buses.context) {
       const contextSrcs = window.buses.context.playAudition(1.0, when);

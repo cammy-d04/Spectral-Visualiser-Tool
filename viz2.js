@@ -127,30 +127,7 @@ function drawViz2() {
   // Axes: x=0 to1200 cents, y=0 to1 (because buildDissonanceCurve normalizes)
   drawAxesViz2(1200, 1.0, xs, ys, plotW, plotH);
 
-
-  if (!curve || curve.cents.length === 0) return;
-
-  // ---draw dissonance curve---
-
-  ctx2.globalAlpha = 1; //transparency
-  ctx2.strokeStyle = '#8635f7';
-  ctx2.lineWidth = 1.5; //thickness
-  ctx2.beginPath();
-
-  for (let i = 0; i < curve.cents.length; i++) {
-    const c = curve.cents[i];      // 0..1200
-    const v = curve.values[i];     // 0..1
-
-    const x = centsToXViz2(c, xs, plotW);
-    const y = ys - v * plotH;
-
-    if (i === 0) ctx2.moveTo(x, y);
-    else ctx2.lineTo(x, y);
-  }
-  ctx2.stroke();
-  ctx2.globalAlpha = 1;
-
-// ---Tuning system interval overlays---
+  // ---Tuning system interval overlays---
 
 const TUNING_SYSTEMS = {
   just: {
@@ -276,5 +253,28 @@ for (let i = 0; i < overlaysToDraw.length; i++) {
   ctx2.stroke();
 
   ctx2.restore();
+
+  if (!curve || curve.cents.length === 0) return;
+
+  // ---draw dissonance curve---
+
+  ctx2.globalAlpha = 1; //transparency
+  ctx2.strokeStyle = '#8635f7';
+  ctx2.lineWidth = 1.5; //thickness
+  ctx2.beginPath();
+
+  for (let i = 0; i < curve.cents.length; i++) {
+    const c = curve.cents[i];      // 0..1200
+    const v = curve.values[i];     // 0..1
+
+    const x = centsToXViz2(c, xs, plotW);
+    const y = ys - v * plotH;
+
+    if (i === 0) ctx2.moveTo(x, y);
+    else ctx2.lineTo(x, y);
+  }
+  ctx2.stroke();
+  ctx2.globalAlpha = 1;
+
 }
 

@@ -223,6 +223,7 @@ _scheduleBusRecompute() {
     if (this._currentBus) {
       this._currentBus.computeStaticSpectrum().catch(console.warn);
       rebuildDissonanceCurve();
+      DissonanceMeter.compute();
     }
   }, 0);
 }
@@ -322,8 +323,12 @@ createAuditionSource(rate, when) {
 _updateBottomRowColor() {
   const row = document.getElementById('previewBtn' + this.id)?.closest('.trackBottomRow');
   if (!row) return;
-  if (this.group === 'complement') row.style.background = '#5e8ec3';
-  else if (this.group === 'context') row.style.background = '#bb5858';
-  else row.style.background = '#b0b0b0';
+  if (this.group === 'complement') {
+    row.style.background = '#5e8ec3';
+  }
+  else if (this.group === 'context') {
+    row.style.background = '#bb5858';
+  }
+  else row.style.background = '#eeeeee';
 }
 }

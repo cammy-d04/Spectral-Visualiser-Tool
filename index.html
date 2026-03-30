@@ -5,24 +5,42 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>Consonance and Dissonance Visualisation</title>
+  <title>DissonanceLab</title>
+  <link href="https://fonts.cdnfonts.com/css/digital-7-mono" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: system-ui, sans-serif;
-      background: #FCC158;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f4b64a;
       color: #000000;
       margin: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-
+    
+h1 {
+  background: #111;
+  padding: 15px 10px 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #898888;
+  margin-top: 0.5rem;
+  margin-bottom: 0.3rem;
+}
     #layout {
       display: flex;
       width: 100%;
       max-width: 1500px;
-      gap: 16px;
-      align-items: flex-start;
+      gap: 20px;
+      align-items: stretch;
+      padding: 0 16px 16px 16px;
+      box-sizing: border-box;
     }
 
     #sidebar {
@@ -31,21 +49,28 @@
       gap: 8px;
       width: 300px;
       flex-shrink: 0;
-      background: #8d8d8d;
+      background: linear-gradient(165deg, #a7a7a7, #6c6c6c);
       padding-right: 12px;
       padding-left: 12px;
       padding-top: 12px;
       padding-bottom: 12px;
-      border-radius: 12px;
+      border-radius: 10px;
+
 
       /* scrollable stuff */
-      height: calc(100vh - 80px);
+      height: calc(100vh - 110px);
       /* adjust if header is taller/shorter */
       overflow-y: auto;
       overflow-x: hidden;
 
     }
 
+    #sidebar {
+  border: 1px solid #444;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 2px 8px rgba(0,0,0,0.3);
+}
     #main {
       flex: 1;
       display: flex;
@@ -70,9 +95,43 @@
       border-radius: 8px;
     }
 
+
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+    }
+
+    .slider-row span {
+      font-family: 'Digital-7 Mono', monospace;
+      font-size: 1.2rem;
+      text-shadow: 0 0 5px #ff0000, 0 0 10px #ff9500;
+      color: #ffb2b2;
+      background: #111;
+      padding: 2.5px 4px 0 0;
+      border-radius: 2px;
+      margin-right: 10px;
+      text-align: right;
+      border: 1px solid #333;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+      width: 45px;
+    }
+
+    .peak-picker-control label.small {
+  margin-bottom: 22px;  /* space between each slider */
+}
+
     #visualisations {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
     #vizRow {
@@ -94,10 +153,11 @@
     }
 
     h1 {
-      font-size: 1.1rem;
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
+      font-family: 'Digital-7 Mono', monospace;
+      font-size: 2.5rem;
+      letter-spacing: 0.3em;
+      text-shadow: 0 0 5px #bed5ff, 0 0 10px #0059ff;
+      color: #b2d6ff;
     }
 
     .row {
@@ -112,6 +172,23 @@
     }
 
 
+    #dissonanceMeter {
+  width: 40px;
+  height: 200px;
+  background: #222;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+#dissonanceMeterFill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 0%;
+  transition: height 0.03s linear;
+}
+
     .previewBtn {
       align-self: flex-start;
       padding: 3px 10px;
@@ -124,13 +201,14 @@
     }
 
     .previewBtn.previewing {
-      background: #ffd0d0;
-      border-color: rgb(0, 133, 9);
-      color: rgb(117, 180, 1);
+      background: #18cf00;
+      border-color: rgb(24, 80, 0);
+      color: rgb(24, 80, 0);
     }
+
     .engineName {
-  font-weight: 600;
-}
+      font-weight: 600;
+    }
 
     .controls {
       display: flex;
@@ -145,50 +223,70 @@
       width: 100%;
       margin: 8px 0;
       border: 1px solid #ccc;
+      border-radius: 8px;
     }
 
-#sidebar .col > label:first-of-type {
-  background: #b0b0b0;
-  padding: 6px 8px;
-  border-radius: 4px;
-  margin-left: -4px;
-  margin-right: -4px;
+    #sidebar .col>label:first-of-type {
+      padding: 10px 10px;
+
+    }
+    #sidebar .sliderLabel {
+  margin-bottom: 8px;  /* adjust as needed */
 }
+#sidebar .col {
+  border: 2px solid #444;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
     #viz {
       height: 35vh;
     }
 
     #viz2 {
-      height: 23vh;
+      height: 24vh;
     }
 
-    #visualisations h4 {
-      margin: 2px 0;
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      /* wraps nicely on smaller widths */
-      align-items: center;
-      gap: 10px;
-      width: 97.5%;
-      padding: 10px;
-      background: #c7c7c7;
-      border-radius: 8px;
+    #visualisations .viz-box {
+      min-width: 0;
+    }
+
+    #visualisations .col,
+.meter-module {
+  border: 1px solid #676767;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
+.peak-picker-control {
+  border: 2px solid #444;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+    #visualisations .viz-box canvas {
+      margin: 4px 0 0 0;
     }
 
     #auditionCents {
       width: 100%;
     }
 
-.engineTitle {
-  margin-bottom: 6px;
-}
+    .engineTitle {
+      margin-bottom: 6px;
+    }
 
     button,
     input,
     select {
-      margin: 0.5em;
+      margin: -0.5em;
       font-size: 14px;
+    }
+
+    select {
+      margin: 4px;
     }
 
     .chip {
@@ -199,6 +297,49 @@
       color: #555;
     }
 
+    .spectrum-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .peak-picker-control {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 4px;
+      min-width: 300px;
+      background: #b0b0b0;
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    .peak-picker-control label {
+      padding-left: 0.6em;
+    }
+
+    .peak-picker-control .engineTitle {
+      margin-bottom: 20px;
+      /* adjust as needed */
+    }
+
+.engineName {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+    .dissonance-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .dissonance-row .viz-box {
+      flex: 1;
+    }
+
+
     .dot {
       width: 10px;
       height: 10px;
@@ -208,6 +349,24 @@
 
     input[type="range"] {
       width: 240px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      height: 30px;
+    }
+
+    .curve-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+
+    .overlay-control {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      min-width: 120px;
     }
 
     .col {
@@ -216,7 +375,7 @@
       align-items: stretch;
       gap: 2px;
       min-width: 260px;
-      
+
       border-radius: 8px;
       padding: 8px 12px;
       background: #c7c7c7;
@@ -241,6 +400,19 @@
       padding-top: 4px;
     }
 
+    .canvas-with-slider {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .canvas-with-slider canvas {
+      width: 100%;
+      flex-shrink: 0;
+    }
+
     .note {
       font-size: 12px;
       color: #666;
@@ -253,8 +425,9 @@
     .sliderLabel {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 0px;
       margin: 0;
+      padding-left: 0.5em;
     }
 
     .sliderHeader {
@@ -273,25 +446,91 @@
       min-width: 48px;
     }
 
-    input[type="range"] {
-      width: 100%;
-      margin: 0;
+
+    .dissonance-section {
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
     }
 
-.trackBottomRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  width: auto;
-  gap: 10px;
-  margin-top: 4px;
-  margin-left: -4px;
-  margin-right: -4px;
-  background: #b0b0b0;
-  padding: 6px 8px;
-  border-radius: 4px;
-  box-sizing: border-box;
+    .dissonance-section .viz-box {
+      flex: 1;
+    }
+
+    .meter-module {
+      width: 120px;
+      min-width: unset;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .meter-module .dissonance-meter-vertical {
+      flex: 1;
+      width: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 35px;
+      height: 68px;
+      background: url('slider.png') center/contain no-repeat;
+      border: none;
+      cursor: pointer;
+      margin-top: -33px;
+      /* (track height - thumb height) / 2 */
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 24px;
+      height: 40px;
+      background: url('slider.png') center/contain no-repeat;
+      border: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
 }
+
+input[type="range"]::-moz-range-thumb {
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.5));
+}
+
+    /* The track (groove) */
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+      border-radius: 4px;
+      border: 1px solid #444;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Firefox track */
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+      border-radius: 4px;
+      border: 1px solid #444;
+    }
+
+    .trackBottomRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      width: auto;
+      gap: 10px;
+      margin-top: 4px;
+      margin-left: -4px;
+      margin-right: -4px;
+      background: #b0b0b0;
+      padding: 6px 8px;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
 
     .groupControl {
       display: flex;
@@ -312,7 +551,7 @@
 </head>
 
 <body>
-  <h1>Harmonics / Spectra Visualisation</h1>
+  <h1>DissonanceLab</h1>
 
   <div id="layout">
 
@@ -320,9 +559,9 @@
 
 
 
-            <div class="col">
+      <div class="col">
         <div class="engineTitle">
-          <span class="engineName">Track A</span>
+          <span class="engineName">Track 1</span>
         </div>
 
         <label>
@@ -383,7 +622,7 @@
 
       <div class="col">
         <div class="engineTitle">
-          <span class="engineName">Track B</span>
+          <span class="engineName">Track 2</span>
         </div>
 
         <label>
@@ -441,7 +680,7 @@
 
       <div class="col">
         <div class="engineTitle">
-          <span class="engineName">Track C</span>
+          <span class="engineName">Track 3</span>
         </div>
 
         <label>
@@ -499,7 +738,7 @@
 
       <div class="col">
         <div class="engineTitle">
-          <span class="engineName">Track D</span>
+          <span class="engineName">Track 4</span>
         </div>
 
         <label>
@@ -557,7 +796,7 @@
 
       <div class="col">
         <div class="engineTitle">
-          <span class="engineName">Track E</span>
+          <span class="engineName">Track 5</span>
         </div>
 
         <label>
@@ -615,7 +854,7 @@
 
       <div class="col">
         <div class="engineTitle">
-          <span class="engineName">Track F</span>
+          <span class="engineName">Track 6</span>
         </div>
 
         <label>
@@ -678,114 +917,124 @@
       <div id="vizRow">
 
         <div id="visualisations">
-          <h4>Spectrum</h4>
-          <canvas id="viz"></canvas>
-          <h4>Dissonance Curve</h4>
-          <canvas id="viz2"></canvas>
-
-          <div class="col" style="min-width:320px;">
-            <div style="font-weight:600;margin-bottom:1px;">Play interval</div>
-
-            <label class="small">
-              Cents: <span id="auditionCentsVal">0</span>
-              <input id="auditionCents" type="range" min="0" max="1200" value="0" step="1">
-            </label>
-
-            <button id="auditionPlay" class="previewBtn">▶ Play interval</button>
-          </div>
-        </div>
-
-
-        <div id="tuningPanel">
-          <div class="col" style="min-width:320px;">
-            <div style="font-weight:600;margin-bottom:6px;">Dissonance meter</div>
-            <div id="dissonanceMeter" style="
-            height: 24px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid #aaa;
-          ">
-              <div id="dissonanceMeterFill" style="
-              height: 100%;
-              width: 0%;
-              background: green;
-              transition: width 0.05s, background 0.05s;
-            "></div>
+          <div class="col viz-box">
+            <div class="engineTitle">
+              <span class="engineName">Spectrum</span>
             </div>
-            <div style="font-size:12px;color:#444;margin-top:2px;">
-              Dissonance: <span id="dissonanceMeterVal">—</span>
+
+            <div class="spectrum-row">
+              <div class="canvas-with-slider">
+                <canvas id="viz"></canvas>
+                <label class="small sliderLabel">
+                  <div class="sliderHeader">
+                    <span class="sliderTitle">X-Zoom:</span>
+                  </div>
+                  <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
+                </label>
+              </div>
+
+              <div class="peak-picker-control">
+                <div class="engineTitle">
+                  <span class="engineName">Partial Selector</span>
+                </div>
+
+                <label class="small">
+                  Threshold:
+                  <div class="slider-row">
+                    <input id="threshFrac" type="range" min="0.05" max="0.60" value="0.20" step="0.01">
+                    <span id="threshFracVal">0.20</span>
+                  </div>
+                </label>
+
+                <label class="small">
+                  Max peaks:
+                  <div class="slider-row">
+                    <input id="maxPeaksPicked" type="range" min="1" max="20" value="7" step="1">
+                    <span id="maxPeaksVal">7</span>
+                  </div>
+                </label>
+
+                <label class="small">
+                  Min sep (Hz):
+                  <div class="slider-row">
+                    <input id="minSepHz" type="range" min="5" max="120" value="30" step="1">
+                    <span id="minSepHzVal">30</span>
+                  </div>
+                </label>
+
+                <label class="small">
+                  fMin (Hz): 
+                  <div class="slider-row">
+                    <input id="peakFMin" type="range" min="20" max="400" value="60" step="1">
+                    <span id="peakFMinVal">60</span>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
 
-          <div class="col" style="min-width:320px;">
-            <div style="font-weight:600;margin-bottom:6px;">Main Controls</div>
+          <div class="dissonance-section">
+            <div class="col viz-box">
+              <div class="engineTitle">
+                <span class="engineName">Dissonance Curve</span>
+              </div>
 
-            <label>
-              X-Zoom:
-              <input type="range" id="xZoom" min="1" max="20" value="1" step="0.1">
-            </label>
-          </div>
+              <div class="curve-row">
+                <div class="canvas-with-slider">
+                  <canvas id="viz2"></canvas>
+                  <label class="small sliderLabel">
+                    <div class="sliderHeader">
+                      <span class="sliderTitle">Interval Selector:</span>
+                      <span class="sliderValue" id="auditionCentsVal">0</span>
+                    </div>
+                    <input id="auditionCents" type="range" min="0" max="1200" value="0" step="1">
+                  </label>
+                  <button id="auditionPlay" class="previewBtn">▶ Play interval</button>
+                </div>
 
+                <div class="overlay-control">
+                  <label class="small">
+                    Interval overlay:
+                    <select id="intervalOverlay">
+                      <option value="none">None</option>
+                      <option value="just" selected>Just Intonation</option>
+                      <option value="pyth">Pythagorean</option>
+                      <option value="12tet">12-TET</option>
+                      <option value="slendro">Javanese Slendro</option>
+                      <option value="pelog">Javanese Pelog</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
 
-          <div class="col" style="min-width:320px;">
-            <div style="font-weight:600;margin-bottom:6px;">Peak picker</div>
-
-            <label class="small">
-              Threshold (fraction of max bin): <span id="threshFracVal">0.20</span>
-              <input id="threshFrac" type="range" min="0.05" max="0.60" value="0.20" step="0.01">
-            </label>
-
-            <label class="small">
-              Max peaks picked: <span id="maxPeaksVal">7</span>
-              <input id="maxPeaksPicked" type="range" min="1" max="20" value="7" step="1">
-            </label>
-
-            <label class="small">
-              Min separation (Hz): <span id="minSepHzVal">30</span>
-              <input id="minSepHz" type="range" min="5" max="120" value="30" step="1">
-            </label>
-
-            <label class="small">
-              Peak fMin (Hz): <span id="peakFMinVal">60</span>
-              <input id="peakFMin" type="range" min="20" max="400" value="60" step="1">
-            </label>
-          </div>
-
-
-          <div class="col" style="min-width:320px;">
-            <div style="font-weight:600;margin-bottom:6px;">Dissonance curve</div>
-
-            <label class="small">
-              Interval overlay:
-              <select id="intervalOverlay">
-                <option value="none">None</option>
-                <option value="just" selected>Just Intonation</option>
-                <option value="pyth">Pythagorean</option>
-                <option value="12tet">12-TET</option>
-                <option value="slendro">Javanese Slendro</option>
-                <option value="pelog">Javanese Pelog</option>
-              </select>
-            </label>
-
+            <div class="col meter-module">
+              <div class="engineTitle">
+                <span class="engineName">Live Meter</span>
+              </div>
+              <div class="dissonance-meter-vertical">
+<div id="dissonanceMeter">
+  <div id="dissonanceMeterFill"></div>
+</div>
+                <div class="meter-value" id="dissonanceMeterVal">—</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
+  </div>
+  </div>
   </div>
 
 
-
-
-
-
-
-
+<script src="fft.js"></script>
+<script src="peak-picking.js"></script>
 <script src="static-spectrum.js"></script>
+<script src="sethares.js"></script>
+<script src="dissonance-meter.js"></script>  <!-- ADD THIS -->
 <script src="group-bus.js"></script>
 <script src="viz.js"></script>
-<script src="sethares.js"></script>
 <script src="viz2.js"></script>
 <script src="tracks.js"></script>
 <script src="main.js"></script>
