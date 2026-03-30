@@ -74,6 +74,8 @@
     }
 
     window.dissonanceOverTime = { frameTimes, dissonance, hopDuration };
+    drawTimeline();
+    return window.dissonanceOverTime;
   }
 
 
@@ -107,8 +109,6 @@
 
 
 
-
-// Add these inside the IIFE, after compute():
 
 let playbackStartTime = null;
 let animationId = null;
@@ -152,11 +152,83 @@ function setMeterValue(value) {
   if (!fill) return;
 
   fill.style.height = `${value * 100}%`;
-  const hue = (1 - value) * 120;
-  fill.style.backgroundColor = `hsl(${hue}, 70%, 50%)`;
+fill.style.background = dissonanceToColor(value);
 }
 
-// Update the export to include all three:
-window.DissonanceMeter = { compute, startPlayback, stopPlayback };
 
+function getTimelineCanvas() {
+  return document.getElementById("dissonanceTimeline");
+}
+
+function resizeTimelineCanvas() {
+  const canvas = getTimelineCanvas();
+  if (!canvas) return null;
+
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(rect.width));
+  canvas.height = Math.max(1, Math.round(rect.height));
+
+  return canvas;
+}
+
+function dissonanceToColor(value) {
+  const v = Math.max(0, Math.min(1, value));
+  const hue = (1 - v) * 120; // green -> red
+  return `hsl(${hue}, 70%, 50%)`;
+}
+
+function drawTimeline() {
+  const canvas = resizeTimelineCanvas();
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const data = window.dissonanceOverTime;
+  if (!data || !data.dissonance || data.dissonance.length === 0) {
+    ctx.fillStyle = "#333";
+    ctx.fillRect(0, 0, w, h);
+    return;
+  }
+
+  const values = data.dissonance;
+  const n = values.length;
+
+  for (let x = 0; x < w; x++) {
+    const i = Math.min(n - 1, Math.floor((x / w) * n));
+    const v = values[i];
+
+    ctx.fillStyle = dissonanceToColor(v);
+    ctx.fillRect(x, 0, 1, h);
+  }
+}
+
+
+function drawTimelineTest() {
+  const canvas = resizeTimelineCanvas();
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  for (let x = 0; x < w; x++) {
+    const t = x / Math.max(1, w - 1);
+    const hue = (1 - t) * 120; // same green -> red idea
+    ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+    ctx.fillRect(x, 0, 1, h);
+  }
+}
+
+window.DissonanceMeter = {
+  compute,
+  startPlayback,
+  stopPlayback,
+  drawTimeline
+};
 })();

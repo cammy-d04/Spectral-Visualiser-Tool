@@ -227,3 +227,10 @@ document.getElementById("auditionPlay").addEventListener("click", () => {
 });
 
 
+window.addEventListener("load", () => {
+  DissonanceMeter.drawTimeline();
+});
+
+window.addEventListener("resize", () => {
+  DissonanceMeter.drawTimeline();
+});
