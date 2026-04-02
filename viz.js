@@ -4,13 +4,12 @@
 //main.js calls setTracks(tracks) and startViz()
 
 
-let vizTracks = []; //list of tracks we want to draw
 // Canvases
 const canvas = document.getElementById('viz'); //get canvas element
 const ctx = canvas.getContext('2d'); //2d drawing context so can draw lines n stuff
 
 
-function startViz() { 
+export function startViz() { 
   requestAnimationFrame(draw); //begin animation loop
 }
 
@@ -59,7 +58,7 @@ const labelSpacing = 1000;
 
 for (let f = 0; f <= fMax; f += tickSpacing) {
   const frac = f / maxFreq;
-  let zoomedFrac = frac * xZoom;
+  let zoomedFrac = frac * window.xZoom;
   if (zoomedFrac > 1) break;
   const x = xs + zoomedFrac * (w - xs - 8);
   ctx.beginPath();
@@ -101,7 +100,7 @@ ctx.restore();
 // =====================
 // Multi-track draw loop
 // =====================
-function draw() {
+export function draw() {
 
   requestAnimationFrame(draw);
 
@@ -153,7 +152,7 @@ function drawContext(contextBus){
       const frac = (i * binHz) / nyquist;
       const y = (h - MARGIN_BOTTOM) - v * plotH; // convert amplitude to vertical pixel position
 
-      let zoomedFrac = frac * xZoom; //apply zoom to x position only 
+let zoomedFrac = frac * window.xZoom;
       if (zoomedFrac > 1) zoomedFrac = 1;      // clamp so it doesn't run off canvas
 
       //map frequency position to horizontal pixel
@@ -175,7 +174,7 @@ function drawContext(contextBus){
       const v = contextBus.staticBins[peak.bin] / 255;
 
       const frac = peak.f / nyquist;
-      let zoomedFrac = frac * xZoom;
+      let zoomedFrac = frac * window.xZoom;
       if (zoomedFrac > 1) zoomedFrac = 1;
 
       const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
@@ -214,7 +213,7 @@ function drawComplement(complementBus) {
   for (let i = 0; i < bins.length; i++) {
     const stretchedF = i * binHz * ratio;
     const frac = stretchedF / nyquist;
-    let zoomedFrac = frac * xZoom;
+    let zoomedFrac = frac * window.xZoom;
     if (zoomedFrac > 1) break;
 
     const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);
@@ -235,7 +234,7 @@ function drawComplement(complementBus) {
   for (const peak of complementBus.peaks) {
     const stretchedF = peak.f * ratio;
     const frac = stretchedF / nyquist;
-    let zoomedFrac = frac * xZoom;
+    let zoomedFrac = frac * window.xZoom;
     if (zoomedFrac > 1) continue;
 
     const x = MARGIN_LEFT + zoomedFrac * (w - MARGIN_LEFT - 10);

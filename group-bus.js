@@ -1,9 +1,13 @@
+import {compute} from './static-spectrum.js';
+import { pickPeaksWithGlobals } from './peak-picking.js';
+
 // group-bus.js
 // A "bus" is a group mixing point for analysis/visualisation.
 // Tracks connect their (stable) output GainNode to a bus GainNode.
 // The bus feeds an AnalyserNode which the viz reads and draws as one line.
 //this is basically just a gain node
-class GroupBus {
+
+export class GroupBus {
   constructor(opts) {
     this.id = opts.id;
     this.color = opts.color;
@@ -118,7 +122,7 @@ async renderMixedBuffer(rateMultiplier = 1.0) {
 
   async computeStaticSpectrum() {
   const mixed = await this.renderMixedBuffer(); ////what is goin gon here????
-  console.log(`Bus ${this.id}: renderMixedBuffer returned`, mixed);
+
   if (!mixed) {
     this.staticBins = null;
     this.staticRaw = null;
@@ -130,15 +134,12 @@ async renderMixedBuffer(rateMultiplier = 1.0) {
   const hopSize = Math.floor(fftSize / 4);
 
   // StaticSpectrum.compute should take an AudioBuffer and return bins/array/etc.
-  const result = await StaticSpectrum.compute(mixed, { fftSize, hopSize });
-  console.log(`Bus ${this.id}: staticBins length`, result.bytes.length, 'max byte', Math.max(...result.bytes));
+  const result = await compute(mixed, { fftSize, hopSize });
   this.staticBins = result.bytes;
   this.staticRaw = result.raw;
   this.normalizeAllBuses();  // re-scale both buses against shared max
-  console.log(`Bus ${this.id}: after normalize, max staticBin`, Math.max(...this.staticBins));
 
   this.pickPeaks()
-  rebuildDissonanceCurve();
   return this.staticBins;
 }
 
@@ -151,8 +152,7 @@ pickPeaks() {
 
   const binHz = window.audioCtx.sampleRate / this.analyser.fftSize;
 
-  this.peaks = window.PeakPicking.pickPeaksWithGlobals(this.staticBins, binHz);
-  this.peaksUpdatedAt = performance.now();
+  this.peaks = pickPeaksWithGlobals(this.staticBins, binHz);
 }
 
 
@@ -167,4 +167,3 @@ playAudition(rate, when) {
 
 
 }
-window.GroupBus = GroupBus; //export to global for main.js to use

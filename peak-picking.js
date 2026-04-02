@@ -1,11 +1,8 @@
 // peak-picking.js
 // Standalone peak-picking logic, reusable by GroupBus and time-varying analysis.
 
-(function () {
-  "use strict";
-
  
-  function pickPeaks(mag, opts = {}) {
+  export function pickPeaks(mag, opts = {}) {
     const {
       binHz,
       threshFrac = 0.2,
@@ -16,9 +13,6 @@
       compress = true,
     } = opts;
 
-    if (!binHz || binHz <= 0) {
-      throw new Error("pickPeaks: opts.binHz is required and must be > 0");
-    }
 
     const minSepBins = Math.max(1, Math.round(minSepHz / binHz));
     const minBin = Math.max(2, Math.round(minFreqHz / binHz));
@@ -68,7 +62,7 @@
   }
 
 
-  function pickPeaksWithGlobals(mag, binHz) {
+  export function pickPeaksWithGlobals(mag, binHz) {
     return pickPeaks(mag, {
       binHz,
       threshFrac: window.threshFrac ?? 0.2,
@@ -80,9 +74,3 @@
     });
   }
 
-  // Export
-  window.PeakPicking = {
-    pickPeaks,
-    pickPeaksWithGlobals,
-  };
-})();

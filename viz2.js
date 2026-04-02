@@ -1,11 +1,13 @@
 
-function startViz2() {
+
+
+export function startViz2() {
   requestAnimationFrame(drawViz2);
 }
 
 
 
-// sethares dissonane curve visualisation
+// sethares dissonance curve visualisation
 
 const canvas2 = document.getElementById('viz2');
 const ctx2 = canvas2.getContext('2d');
@@ -94,20 +96,6 @@ ctx2.rotate(-Math.PI / 2);
 ctx2.fillText('Dissonance', 0, 0);
 ctx2.restore();
 }
-
-let curve = null;
-
-function rebuildDissonanceCurve() {
-  const peaks1 = window.buses.context?.peaks;
-  const peaks2 = window.buses.complement?.peaks;
-  
-  if (!peaks1?.length || !peaks2?.length) {
-    curve = null;
-    return;
-  }
-  
-  curve = buildDissonanceCurve(peaks1, peaks2);
-};
 
 
 function drawViz2() {
@@ -254,7 +242,7 @@ for (let i = 0; i < overlaysToDraw.length; i++) {
 
   ctx2.restore();
 
-  if (!curve || curve.cents.length === 0) return;
+  if (!window.dissonanceCurve || window.dissonanceCurve.cents.length === 0) return;
 
   // ---draw dissonance curve---
 
@@ -263,9 +251,9 @@ for (let i = 0; i < overlaysToDraw.length; i++) {
   ctx2.lineWidth = 1.5; //thickness
   ctx2.beginPath();
 
-  for (let i = 0; i < curve.cents.length; i++) {
-    const c = curve.cents[i];      // 0..1200
-    const v = curve.values[i];     // 0..1
+  for (let i = 0; i < window.dissonanceCurve.cents.length; i++) {
+    const c = window.dissonanceCurve.cents[i];      // 0..1200
+    const v = window.dissonanceCurve.values[i];     // 0..1
 
     const x = centsToXViz2(c, xs, plotW);
     const y = ys - v * plotH;
@@ -277,4 +265,3 @@ for (let i = 0; i < overlaysToDraw.length; i++) {
   ctx2.globalAlpha = 1;
 
 }
-

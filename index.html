@@ -125,7 +125,7 @@
     }
 
     .peak-picker-control label.small {
-      margin-bottom: 22px;
+      margin-bottom: 0px;
       /* space between each slider */
     }
 
@@ -247,7 +247,7 @@
     }
 
     #viz {
-      height: 35vh;
+      height: 24vh;
     }
 
     #viz2 {
@@ -267,22 +267,22 @@
     }
 
     .meter-module {
-  width: 120px;
-  min-width: 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
+      width: 120px;
+      min-width: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
 
-#dissonanceTimeline {
-  width: 100%;
-  height: 18px;
-  display: block;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-}
+    #dissonanceTimeline {
+      width: 100%;
+      height: 18px;
+      display: block;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
 
     .peak-picker-control {
       border: 2px solid #444;
@@ -552,7 +552,7 @@
       margin-top: 4px;
       margin-left: -4px;
       margin-right: -4px;
-      background: #b0b0b0;
+      background: #eeeeee;
       padding: 6px 8px;
       border-radius: 4px;
       box-sizing: border-box;
@@ -631,15 +631,14 @@
             <span class="groupLabel">Group:</span>
             <select id="showA">
               <option value="off" selected>Off</option>
-              <option value="context">Context</option>
-              <option value="complement">Complement</option>
+              <option value="context">Fixed</option>
+              <option value="complement">Sliding</option>
             </select>
           </label>
 
-          <button id="previewBtnA" class="previewBtn"
-            onclick="{ const t=tracks.find(t=>t.id==='A'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">
-            ▶ Preview
-          </button>
+          <button id="previewBtnA" class="previewBtn">
+  ▶ Preview
+</button>
         </div>
       </div>
 
@@ -692,15 +691,14 @@
             <span class="groupLabel">Group:</span>
             <select id="showB">
               <option value="off" selected>Off</option>
-              <option value="context">Context</option>
-              <option value="complement">Complement</option>
+              <option value="context">Fixed</option>
+              <option value="complement">Sliding</option>
             </select>
           </label>
 
-          <button id="previewBtnB" class="previewBtn"
-            onclick="{ const t=tracks.find(t=>t.id==='B'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">
-            ▶ Preview
-          </button>
+          <button id="previewBtnB" class="previewBtn">
+  ▶ Preview
+</button>
         </div>
       </div>
 
@@ -750,15 +748,14 @@
             <span class="groupLabel">Group:</span>
             <select id="showC">
               <option value="off" selected>Off</option>
-              <option value="context">Context</option>
-              <option value="complement">Complement</option>
+              <option value="context">Fixed</option>
+              <option value="complement">Sliding</option>
             </select>
           </label>
 
-          <button id="previewBtnC" class="previewBtn"
-            onclick="{ const t=tracks.find(t=>t.id==='C'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">
-            ▶ Preview
-          </button>
+          <button id="previewBtnC" class="previewBtn">
+  ▶ Preview
+</button>
         </div>
       </div>
 
@@ -808,15 +805,14 @@
             <span class="groupLabel">Group:</span>
             <select id="showD">
               <option value="off" selected>Off</option>
-              <option value="context">Context</option>
-              <option value="complement">Complement</option>
+              <option value="context">Fixed</option>
+              <option value="complement">Sliding</option>
             </select>
           </label>
 
-          <button id="previewBtnD" class="previewBtn"
-            onclick="{ const t=tracks.find(t=>t.id==='D'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">
-            ▶ Preview
-          </button>
+          <button id="previewBtnD" class="previewBtn">
+  ▶ Preview
+</button>
         </div>
       </div>
 
@@ -866,15 +862,14 @@
             <span class="groupLabel">Group:</span>
             <select id="showE">
               <option value="off" selected>Off</option>
-              <option value="context">Context</option>
-              <option value="complement">Complement</option>
+              <option value="context">Fixed</option>
+              <option value="complement">Sliding</option>
             </select>
           </label>
 
-          <button id="previewBtnE" class="previewBtn"
-            onclick="{ const t=tracks.find(t=>t.id==='E'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">
-            ▶ Preview
-          </button>
+          <button id="previewBtnE" class="previewBtn">
+  ▶ Preview
+</button>
         </div>
       </div>
 
@@ -924,15 +919,14 @@
             <span class="groupLabel">Group:</span>
             <select id="showF">
               <option value="off" selected>Off</option>
-              <option value="context">Context</option>
-              <option value="complement">Complement</option>
+              <option value="context">Fixed</option>
+              <option value="complement">Sliding</option>
             </select>
           </label>
 
-          <button id="previewBtnF" class="previewBtn"
-            onclick="{ const t=tracks.find(t=>t.id==='F'); t?._previewSrc ? t.previewStop() : t?.previewPlay(); }">
-            ▶ Preview
-          </button>
+          <button id="previewBtnF" class="previewBtn">
+  ▶ Preview
+</button>
         </div>
       </div>
 
@@ -998,7 +992,6 @@
               </div>
             </div>
           </div>
-
           <div class="dissonance-section">
             <div class="col viz-box">
               <div class="engineTitle">
@@ -1043,30 +1036,37 @@
                 <div id="dissonanceMeter">
                   <div id="dissonanceMeterFill"></div>
                 </div>
-                <div class="meter-value" id="dissonanceMeterVal">—</div>
               </div>
+            </div>
+            </div>
 
+
+
+            <div class="col viz-box">
+              <div class="engineTitle">
+                <span class="engineName">Dissonance Over Time</span>
+              </div>
               <canvas id="dissonanceTimeline"></canvas>
             </div>
+
           </div>
         </div>
       </div>
     </div>
   </div>
   </div>
-  </div>
 
-
-  <script src="fft.js"></script>
-  <script src="peak-picking.js"></script>
-  <script src="static-spectrum.js"></script>
-  <script src="sethares.js"></script>
-  <script src="dissonance-meter.js"></script> <!-- ADD THIS -->
-  <script src="group-bus.js"></script>
-  <script src="viz.js"></script>
-  <script src="viz2.js"></script>
-  <script src="tracks.js"></script>
-  <script src="main.js"></script>
+<script type="module" src="ui.js"></script>
+  <script type="module" src="fft.js"></script>
+  <script type="module" src="peak-picking.js"></script>
+  <script type="module" src="static-spectrum.js"></script>
+  <script type="module" src="sethares.js"></script>
+  <script type="module" src="dissonance-meter.js"></script> <!-- ADD THIS -->
+  <script type="module" src="group-bus.js"></script>
+  <script type="module" src="viz.js"></script>
+  <script type="module" src="viz2.js"></script>
+  <script type="module" src="tracks.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 
 </html>

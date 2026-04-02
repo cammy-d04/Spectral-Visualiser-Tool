@@ -1,16 +1,13 @@
 // fft-utils.js
 // Shared FFT utilities used by StaticSpectrum and TimeVaryingSpectrum.
 
-(function () {
-  "use strict";
-
   /**
    * Blackman-Harris (4-term) window function.
    * Reduces spectral leakage when applied before FFT.
    * @param {number} N - Window length
    * @returns {Float32Array}
    */
-  function blackmanHarrisWindow(N) {
+  export function blackmanHarrisWindow(N) {
     const a0 = 0.35875, a1 = 0.48829, a2 = 0.14128, a3 = 0.01168;
     const w = new Float32Array(N);
     const denom = N - 1;
@@ -26,7 +23,7 @@
    * @param {Float32Array} re - Real parts (length must be power of 2)
    * @param {Float32Array} im - Imaginary parts (same length)
    */
-  function fftRadix2(re, im) {
+  export function fftRadix2(re, im) {
     const N = re.length;
     
     // Bit-reversal permutation
@@ -68,7 +65,7 @@
    * @param {AudioBuffer} audioBuffer
    * @returns {Float32Array}
    */
-  function mixToMono(audioBuffer) {
+  export function mixToMono(audioBuffer) {
     const nCh = audioBuffer.numberOfChannels;
     const len = audioBuffer.length;
 
@@ -89,7 +86,7 @@
    * @param {number} n
    * @returns {boolean}
    */
-  function isPowerOfTwo(n) {
+  export function isPowerOfTwo(n) {
     return n > 0 && (n & (n - 1)) === 0;
   }
 
@@ -101,7 +98,7 @@
    * @param {number} fftSize
    * @returns {Float32Array} - Magnitude array (length fftSize/2)
    */
-  function computeFrameMagnitude(samples, start, window, fftSize) {
+  export function computeFrameMagnitude(samples, start, window, fftSize) {
     const re = new Float32Array(fftSize);
     const im = new Float32Array(fftSize);
 
@@ -122,13 +119,3 @@
 
     return mag;
   }
-
-  // Export
-  window.FFTUtils = {
-    blackmanHarrisWindow,
-    fftRadix2,
-    mixToMono,
-    isPowerOfTwo,
-    computeFrameMagnitude,
-  };
-})();

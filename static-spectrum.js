@@ -1,13 +1,8 @@
-// static-spectrum.js
-// Whole-file static spectrum (Welch average).
-// Uses FFTUtils for the heavy lifting.
+import { blackmanHarrisWindow, mixToMono, isPowerOfTwo, computeFrameMagnitude } from './fft.js';
 
-(function () {
-  "use strict";
 
-  const { blackmanHarrisWindow, mixToMono, isPowerOfTwo, computeFrameMagnitude } = window.FFTUtils;
 
-  function normaliseToByteBins(mag) {
+  export function normaliseToByteBins(mag) {
     let max = 0;
     for (let i = 0; i < mag.length; i++) {
       if (mag[i] > max) max = mag[i];
@@ -22,7 +17,9 @@
     return out;
   }
 
-  async function compute(audioBuffer, opts = {}) {
+
+
+  export async function compute(audioBuffer, opts = {}) {
     const fftSize = opts.fftSize ?? 2048;
     const hopSize = opts.hopSize ?? (fftSize >> 1);
 
@@ -60,6 +57,3 @@
 
     return { bytes: normaliseToByteBins(avgMag), raw: avgMag };
   }
-
-  window.StaticSpectrum = { compute };
-})();

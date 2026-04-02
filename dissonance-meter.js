@@ -1,18 +1,13 @@
-// dissonance-meter.js
-// Computes dissonance over time and stores it globally.
-
-(function () {
-  "use strict";
-
-  const { blackmanHarrisWindow, mixToMono, computeFrameMagnitude } = window.FFTUtils;
-  const { pickPeaks } = window.PeakPicking;
+import { blackmanHarrisWindow, mixToMono, computeFrameMagnitude } from './fft.js';
+import { pickPeaks } from './peak-picking.js';
+import { setharesDissonance } from './sethares.js';
 
   /**
    * Compute dissonance over time between context and complement buses.
    * Reads from window.buses and window.auditionCents.
    * Stores result in window.dissonanceOverTime.
    */
-  async function compute() {
+  async function computeDissonance() {
     const contextBus = window.buses?.context;
     const complementBus = window.buses?.complement;
 
@@ -66,11 +61,9 @@
       if (d > rawMax) rawMax = d;
     }
 
-    if (rawMax > rawMin) {
-      const inv = 1 / (rawMax - rawMin);
-      for (let i = 0; i < maxFrames; i++) {
-        dissonance[i] = (dissonance[i] - rawMin) * inv;
-      }
+    const refMax = rawMax > 0 ? rawMax : 1;
+    for (let i = 0; i < maxFrames; i++) {
+      dissonance[i] = Math.min(1, dissonance[i] / refMax);
     }
 
     window.dissonanceOverTime = { frameTimes, dissonance, hopDuration };
@@ -97,6 +90,8 @@
         maxPeaks: window.maxPeaksPicked ?? 7,
         minSepHz: window.minSepHz ?? 30,
         minFreqHz: window.peakFMin ?? 60,
+        normalize: false,
+        compress: true
       });
 
       allPeaks.push(peaks);
@@ -105,7 +100,6 @@
     return allPeaks;
   }
 
-  window.DissonanceMeter = { compute };
 
 
 
@@ -170,10 +164,9 @@ function resizeTimelineCanvas() {
 
   return canvas;
 }
-
 function dissonanceToColor(value) {
   const v = Math.max(0, Math.min(1, value));
-  const hue = (1 - v) * 120; // green -> red
+  const hue = (1 - Math.pow(v, 0.25)) * 120;
   return `hsl(${hue}, 70%, 50%)`;
 }
 
@@ -206,29 +199,4 @@ function drawTimeline() {
   }
 }
 
-
-function drawTimelineTest() {
-  const canvas = resizeTimelineCanvas();
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width;
-  const h = canvas.height;
-
-  ctx.clearRect(0, 0, w, h);
-
-  for (let x = 0; x < w; x++) {
-    const t = x / Math.max(1, w - 1);
-    const hue = (1 - t) * 120; // same green -> red idea
-    ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
-    ctx.fillRect(x, 0, 1, h);
-  }
-}
-
-window.DissonanceMeter = {
-  compute,
-  startPlayback,
-  stopPlayback,
-  drawTimeline
-};
-})();
+export { computeDissonance, startPlayback, stopPlayback, drawTimeline };

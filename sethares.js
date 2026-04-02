@@ -2,7 +2,7 @@
 // Sethares / Plomp–Levelt sensory dissonance kernel
 // f1, f2 in Hz
 // returns a non-negative roughness contribution (dimensionless)
-function setharesKernel(f1, f2) {
+export function setharesKernel(f1, f2) {
     const df = Math.abs(f1 - f2);
     if (df === 0) return 0;
 
@@ -21,7 +21,7 @@ function setharesKernel(f1, f2) {
 
 
 // Compute Sethares sensory dissonance between all pairs of peaks in the input array
-function setharesDissonance(peaks) {
+export function setharesDissonance(peaks) {
     let dissonanceSum = 0;
 
     for (let i = 0; i < peaks.length; i++) {
@@ -37,7 +37,7 @@ function setharesDissonance(peaks) {
 
 
 // Build a Sethares dissonance curve by comparing a peak set to a shifted copy
-function buildDissonanceCurve(peaks1, peaks2,) {
+export function buildDissonanceCurve(peaks1, peaks2) {
     const centsMin = 0;
     const centsMax = 1200;
     const centsStep = 1; // smaller step = smoother curve but more compute
@@ -56,10 +56,10 @@ function buildDissonanceCurve(peaks1, peaks2,) {
         .sort((p1, p2) => p2.a - p1.a)
 
     if (cleaned1.length < 1 || cleaned2.length < 1) {
-        return { cents: [], values: [], rawMin: 0, rawMax: 0 };
+        window.dissonanceCurve = { cents: [], values: [], rawMin: 0, rawMax: 0 };
     }
 
-    // 2) Normalize amplitudes (and optionally compress) 
+    // 2) Normalize amplitudes
     let aMax1 = 0;
     for (const p of cleaned1) aMax1 = Math.max(aMax1, p.a);
     if (aMax1 <= 0) aMax1 = 1;
@@ -107,5 +107,7 @@ function buildDissonanceCurve(peaks1, peaks2,) {
         rawMin = rawMax = 0;
     }
 
-    return { cents, values, rawMin, rawMax };
+    window.dissonanceCurve = { cents, values, rawMin, rawMax };
 }
+
+
