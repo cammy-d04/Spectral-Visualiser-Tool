@@ -19,7 +19,7 @@ window.buses = {
   complement: new GroupBus({ id: "complement", color: "dodgerblue" })
 };
 
-window.threshFrac = 0.20;
+window.threshFrac = 0.05;
 window.maxPeaksPicked = 7;
 window.minSepHz = 30;
 window.peakFMin = 60;

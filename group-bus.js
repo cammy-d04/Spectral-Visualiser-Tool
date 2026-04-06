@@ -1,5 +1,5 @@
 import {compute} from './static-spectrum.js';
-import { pickPeaksWithGlobals } from './peak-picking.js';
+import {pickPeaks} from './peak-picking.js';
 
 // group-bus.js
 // A "bus" is a group mixing point for analysis/visualisation.
@@ -129,32 +129,24 @@ async renderMixedBuffer(rateMultiplier = 1.0) {
     return null;
   }
 
-  // Use same FFT size as your analyser so everything matches the live view
-  const fftSize = this.analyser ? this.analyser.fftSize : 2048;
-  const hopSize = Math.floor(fftSize / 4);
+  // Use same FFT size as  analyser so everything matches the live view
+  const fftSize = this.analyser.fftSize || 2048;
 
   // StaticSpectrum.compute should take an AudioBuffer and return bins/array/etc.
-  const result = await compute(mixed, { fftSize, hopSize });
-  this.staticBins = result.bytes;
-  this.staticRaw = result.raw;
-  this.normalizeAllBuses();  // re-scale both buses against shared max
+  const result = await compute(mixed, fftSize);
+  this.staticBins = result.compressedSpectrum;
+  this.staticRaw = result.rawSpectrum;
+  this.normalizeAllBuses();  // rescale both buses against shared max
 
   this.pickPeaks()
   return this.staticBins;
 }
 
 
-pickPeaks() {
-  if (!this.staticBins) {
-    this.peaks = [];
-    return;
-  }
-
-  const binHz = window.audioCtx.sampleRate / this.analyser.fftSize;
-
-  this.peaks = pickPeaksWithGlobals(this.staticBins, binHz);
-}
-
+    pickPeaks() {
+        const binHz = window.audioCtx.sampleRate / this.analyser.fftSize;
+        this.peaks = pickPeaks(this.staticBins, binHz);
+    }
 
 playAudition(rate, when) {
   const sources = [];

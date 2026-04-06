@@ -1,8 +1,8 @@
-import { blackmanHarrisWindow, mixToMono, isPowerOfTwo, computeFrameMagnitude } from './fft.js';
+import { blackmanHarrisWindow, mixToMono, computeFrameMagnitude } from './fft.js';
 
 
 
-  export function normaliseToByteBins(mag) {
+  export function logCompressSpectrum(mag) {
     let max = 0;
     for (let i = 0; i < mag.length; i++) {
       if (mag[i] > max) max = mag[i];
@@ -12,48 +12,41 @@ import { blackmanHarrisWindow, mixToMono, isPowerOfTwo, computeFrameMagnitude } 
     const out = new Uint8Array(mag.length);
     for (let i = 0; i < mag.length; i++) {
       const v = Math.log1p(20 * (mag[i] / max)) / Math.log1p(20);
-      out[i] = Math.max(0, Math.min(255, Math.round(v * 255)));
+      out[i] = Math.max(0, Math.min(255, Math.round(v * 255)));//fix byte conversion
     }
     return out;
   }
 
 
 
-  export async function compute(audioBuffer, opts = {}) {
-    const fftSize = opts.fftSize ?? 2048;
-    const hopSize = opts.hopSize ?? (fftSize >> 1);
-
-    if (!isPowerOfTwo(fftSize)) {
-      throw new Error(`fftSize must be power of two, got ${fftSize}`);
-    }
-
+  export async function compute(audioBuffer, fftSize) {
+    const hopSize = Math.floor(fftSize / 4);
     const samples = mixToMono(audioBuffer);
     const window = blackmanHarrisWindow(fftSize);
-    const half = fftSize >> 1;
+    const half = fftSize/2; //only keep positive bins
 
-    const accPow = new Float32Array(half);
+    const powerArray = new Float32Array(half);
     let frames = 0;
 
     // Welch averaging
-    for (let start = 0; start + fftSize <= samples.length; start += hopSize) {
-      const mag = computeFrameMagnitude(samples, start, window, fftSize);
+    for (let start = 0; start + fftSize <= samples.length; start += hopSize) { //loop over waveform in overlapping windows
+      const magnitudeArray = computeFrameMagnitude(samples, start, window, fftSize);
       
       for (let k = 0; k < half; k++) {
-        accPow[k] += mag[k] * mag[k];  // accumulate power
+        powerArray[k] += magnitudeArray[k] * magnitudeArray[k];  // accumulate power
       }
       frames++;
     }
 
     if (frames === 0) {
-      return { bytes: new Uint8Array(half), raw: new Float32Array(half) };
+      return { compressedSpectrum: new Uint8Array(half), rawSpectrum: new Float32Array(half) };
     }
 
-    // Average and convert to magnitude
+    // average and convert to magnitude
     const avgMag = new Float32Array(half);
-    const invFrames = 1 / frames;
     for (let k = 0; k < half; k++) {
-      avgMag[k] = Math.sqrt(accPow[k] * invFrames);
+      avgMag[k] = Math.sqrt(powerArray[k] * (1/frames));
     }
 
-    return { bytes: normaliseToByteBins(avgMag), raw: avgMag };
+    return { compressedSpectrum: logCompressSpectrum(avgMag), rawSpectrum: avgMag };
   }

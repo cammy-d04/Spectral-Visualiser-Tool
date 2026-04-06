@@ -84,15 +84,7 @@ import { setharesDissonance } from './sethares.js';
       const start = frame * hopSize;
       const mag = computeFrameMagnitude(samples, start, win, fftSize);
 
-      const peaks = pickPeaks(mag, {
-        binHz,
-        threshFrac: window.threshFrac ?? 0.2,
-        maxPeaks: window.maxPeaksPicked ?? 7,
-        minSepHz: window.minSepHz ?? 30,
-        minFreqHz: window.peakFMin ?? 60,
-        normalize: false,
-        compress: true
-      });
+      const peaks = pickPeaks(mag, binHz);
 
       allPeaks.push(peaks);
     }

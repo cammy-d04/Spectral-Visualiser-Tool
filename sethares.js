@@ -8,15 +8,20 @@ export function setharesKernel(f1, f2) {
 
     const minF = Math.min(f1, f2);
 
-    // Equivalent Rectangular Bandwidth (ERB) approximation
-    const erb = 24.7 * (4.37e-3 * minF + 1);
+    const Dstar = 0.24;
+    const S1 = 0.0207;
+    const S2 = 18.96;
 
-    const x = df / erb;
+    const C1 = 5;
+    const C2 = -5;
 
-    // empirically derived constant for scaling the curve (plomp and levelt)
-    const a = 3.51;
-    const b = 5.75;
-    return Math.exp(-a * x) - Math.exp(-b * x);
+    const A1 = -3.51;
+    const A2 = -5.75;
+
+    const S = Dstar / (S1 * minF + S2);
+    const x = S * df;
+
+    return C1 * Math.exp(A1 * x) + C2 * Math.exp(A2 * x);
 }
 
 

@@ -13,7 +13,6 @@ export class Track {
     this.gain = window.audioCtx.createGain();
     this._currentBus = null;
     this.gain.gain.value = 1;
-    this._applyGroupRouting();
     this.gain.connect(window.audioCtx.destination);
 
     this.fileBuffer = null;
@@ -25,7 +24,22 @@ export class Track {
 
 setGroup(group) {
     this.group = group;
-    this._applyGroupRouting();
+
+    if (this. _currentBus) {
+      this._currentBus.detach(this);
+      this._currentBus = null;
+    }
+
+    if (!window.buses) return;
+
+    // if "off", don't attach anywhere
+    if (this.group === "off") return;
+
+    const bus = window.buses[this.group];
+    if (!bus) return;
+
+    bus.attach(this);
+    this._currentBus = bus;
   }
 
 
@@ -54,25 +68,6 @@ setGroup(group) {
     // we don't connect the source directly to destination because we want to be able to control the gain
     // (for muting when switching groups) or pitch change or whatever.
     this.fileSource = src;
-  }
-
-  _applyGroupRouting() {
-    // detach from previous bus
-    if (this. _currentBus) {
-      this._currentBus.detach(this);
-      this._currentBus = null;
-    }
-
-    if (!window.buses) return;
-
-    // if "off", don't attach anywhere
-    if (this.group === "off") return;
-
-    const bus = window.buses[this.group];
-    if (!bus) return;
-
-    bus.attach(this);
-    this._currentBus = bus;
   }
 
 

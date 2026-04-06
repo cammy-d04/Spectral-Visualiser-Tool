@@ -55,6 +55,7 @@ function wireTrackUI(track) {
         track.setGroup(groupSelect.value);
         updateBottomRowColor();
         scheduleBusRecompute(track);
+
     });
 
     // File input
@@ -70,7 +71,7 @@ function wireTrackUI(track) {
     // Pitch slider
     pitchSlider.addEventListener("input", () => {
         track.pitchRate = parseFloat(pitchSlider.value);
-        pitchValueLabel.textContent = track.pitchRate.toFixed(2);
+        pitchValueLabel.textContent = track.pitchRate.toFixed(3);
         scheduleBusRecompute(track);
     });
 

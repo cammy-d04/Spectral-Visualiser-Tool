@@ -122,18 +122,11 @@ const TUNING_SYSTEMS = {
     label: "Just Intonation",
     intervals: [
       { cents: 0,    label: "1/1" },
-      { cents: 112,  label: "16/15" },
-      { cents: 182,  label: "10/9" },
       { cents: 204,  label: "9/8" },
-      { cents: 316,  label: "6/5" },
       { cents: 386,  label: "5/4" },
       { cents: 498,  label: "4/3" },
-      { cents: 590,  label: "45/32" },
       { cents: 702,  label: "3/2" },
-      { cents: 814,  label: "8/5" },
       { cents: 884,  label: "5/3" },
-      { cents: 969,  label: "7/4" },
-      { cents: 1018, label: "9/5" },
       { cents: 1088, label: "15/8" },
       { cents: 1200, label: "2/1" },
     ]
@@ -141,19 +134,14 @@ const TUNING_SYSTEMS = {
   pyth: {
     label: "Pythagorean",
     intervals: [
-      { cents: 0,    label: "P1" },
-      { cents: 90,   label: "m2" },
-      { cents: 204,  label: "M2" },
-      { cents: 294,  label: "m3" },
-      { cents: 408,  label: "M3" },
-      { cents: 498,  label: "P4" },
-      { cents: 612,  label: "A4" },
-      { cents: 702,  label: "P5" },
-      { cents: 792,  label: "m6" },
-      { cents: 906,  label: "M6" },
-      { cents: 996,  label: "m7" },
-      { cents: 1110, label: "M7" },
-      { cents: 1200, label: "P8" },
+      { cents: 0,    label: "" },
+      { cents: 204,  label: "9/8" },
+      { cents: 407,  label: "81/64" },
+      { cents: 498,  label: "4/3" },
+      { cents: 702,  label: "3/2" },
+      { cents: 905,  label: "27/16" },
+      { cents: 1110,  label: "243/128" },
+      { cents: 1200, label: "" }
     ]
   },
   "12tet": {
@@ -168,27 +156,22 @@ const TUNING_SYSTEMS = {
     intervals: [
       { cents: 0,    label: "" },
       { cents: 120,   label: "" },
-      { cents: 150,  label: "" },
-      { cents: 280,  label: "" },
-      { cents: 120,  label: "" },
-      { cents: 150,  label: "" },
-      { cents: 280,  label: "" },
-      { cents: 702,  label: "" },
-      { cents: 792,  label: "" },
-      { cents: 906,  label: "" },
-      { cents: 996,  label: "" },
-      { cents: 1110, label: "" },
-      { cents: 1200, label: "" },
+      { cents: 260,  label: "" },
+      { cents: 540,  label: "" },
+      { cents: 675,  label: "" },
+      { cents: 790,  label: "" },
+      { cents: 940,  label: "" },
+      { cents: 1200,  label: "" }
     ]
     },
     slendro: {
       label: "Javanese Slendro",
       intervals: [
-        { cents: 240,    label: "" },
+        { cents: 235,    label: "" },
         { cents: 480,   label: "" },
-        { cents: 720,  label: "" },
+        { cents: 715,  label: "" },
         { cents: 960,  label: "" },
-        { cents: 1200,  label: "" },
+        { cents: 1200,  label: "" }
       ]
     },
 };

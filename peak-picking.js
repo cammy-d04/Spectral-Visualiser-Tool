@@ -2,18 +2,12 @@
 // Standalone peak-picking logic, reusable by GroupBus and time-varying analysis.
 
  
-  export function pickPeaks(mag, opts = {}) {
-    const {
-      binHz,
-      threshFrac = 0.2,
-      maxPeaks = 7,
-      minSepHz = 30,
-      minFreqHz = 60,
-      normalize = true,
-      compress = true,
-    } = opts;
+  export function pickPeaks(mag, binHz) {
 
-
+    const threshFrac = window.threshFrac;
+    const maxPeaks = window.maxPeaksPicked;
+    const minSepHz =  window.minSepHz;
+    const minFreqHz =  window.peakFMin;
     const minSepBins = Math.max(1, Math.round(minSepHz / binHz));
     const minBin = Math.max(2, Math.round(minFreqHz / binHz));
 
@@ -36,7 +30,7 @@
       }
     }
 
-    // Sort by magnitude (strongest first)
+    // Sort by magnitude descending
     candidates.sort((a, b) => b.mag - a.mag);
 
     // Select top peaks with minimum separation
@@ -44,8 +38,7 @@
     for (const c of candidates) {
       if (chosen.length >= maxPeaks) break;
 
-      const tooClose = chosen.some(p => Math.abs(p.bin - c.bin) < minSepBins);
-      if (!tooClose) {
+      if (!chosen.some(p => Math.abs(p.bin - c.bin) < minSepBins)) { //if too close
         chosen.push(c);
       }
     }
@@ -53,24 +46,12 @@
     // Convert to output format
     const peaks = chosen.map(c => {
       const f = c.bin * binHz;
-      let a = normalize ? c.mag / maxMag : c.mag;
-      if (compress) a = Math.sqrt(a);
+      let a = c.mag / maxMag; //normalize
+      a = Math.sqrt(a); //compress
       return { f, a, bin: c.bin };
     });
 
     return peaks;
-  }
 
-
-  export function pickPeaksWithGlobals(mag, binHz) {
-    return pickPeaks(mag, {
-      binHz,
-      threshFrac: window.threshFrac ?? 0.2,
-      maxPeaks: window.maxPeaksPicked ?? 7,
-      minSepHz: window.minSepHz ?? 30,
-      minFreqHz: window.peakFMin ?? 60,
-      normalize: true,
-      compress: true,
-    });
   }
 

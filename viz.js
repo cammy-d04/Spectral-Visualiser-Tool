@@ -148,7 +148,8 @@ function drawContext(contextBus){
 
 
     for (let i = 0; i < contextBus.staticBins.length; i++) {//loop over bins
-      const v = contextBus.staticBins[i] / 255; //normalise magnitude to between 0 and 1
+      const v = contextBus.staticBins[i]/255;
+
       const frac = (i * binHz) / nyquist;
       const y = (h - MARGIN_BOTTOM) - v * plotH; // convert amplitude to vertical pixel position
 
